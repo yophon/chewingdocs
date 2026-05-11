@@ -3,3 +3,5 @@
 .claude/
 **/.DS_Store
 **/.obsidian/
+.venv/
+site/

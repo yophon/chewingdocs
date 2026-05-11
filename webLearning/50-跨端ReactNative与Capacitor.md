@@ -16,7 +16,7 @@
    Tauri Mobile(2024+ 新出)
 ```
 
-这一篇详讲 **React Native** 和 **Capacitor**——Web 工程师最容易接的两条路。Flutter 在 [`flutterLearning/`](../flutterLearning/) 有专门系列。
+这一篇详讲 **React Native** 和 **Capacitor**——Web 工程师最容易接的两条路。Flutter 在 [Flutter 学习系列](../flutterLearning/01-状态管理总览.md) 里有专门内容。
 
 ---
 
@@ -528,7 +528,7 @@ Dart 语言,Skia 自己绘制 UI
 缺点:Dart 学习曲线,跟 Web 生态隔离
 ```
 
-详见你的 [`flutterLearning/`](../flutterLearning/) 系列。
+详见你的 [Flutter 学习系列](../flutterLearning/01-状态管理总览.md)。
 
 ### Expo
 
