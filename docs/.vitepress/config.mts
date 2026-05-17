@@ -79,6 +79,10 @@ function nav(): DefaultTheme.NavItem[] {
   ];
 }
 
+function escapeVueMustaches(html: string) {
+  return html.replace(/\{\{/g, "&#123;&#123;").replace(/\}\}/g, "&#125;&#125;");
+}
+
 export default defineConfig({
   title: "chewingdocs",
   description: "按主题整理的技术学习文档库",
@@ -86,16 +90,16 @@ export default defineConfig({
   cleanUrls: true,
   ignoreDeadLinks: true,
   lastUpdated: true,
-  vue: {
-    template: {
-      compilerOptions: {
-        delimiters: ["%%{", "}%%"]
-      }
-    }
-  },
   markdown: {
     html: false,
-    lineNumbers: false
+    lineNumbers: false,
+    config(md) {
+      const render = md.render.bind(md);
+      const renderInline = md.renderInline.bind(md);
+
+      md.render = (src, env) => escapeVueMustaches(render(src, env));
+      md.renderInline = (src, env) => escapeVueMustaches(renderInline(src, env));
+    }
   },
   themeConfig: {
     logo: "/logo.svg",
