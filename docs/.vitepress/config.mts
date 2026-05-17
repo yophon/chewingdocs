@@ -109,9 +109,6 @@ export default defineConfig({
       level: [2, 3],
       label: "本页目录"
     },
-    search: {
-      provider: "local"
-    },
     socialLinks: [
       { icon: "github", link: "https://github.com/yophon/chewingdocs" }
     ],
