@@ -1,0 +1,31 @@
+import{_ as s,H as n,f as p,i as l}from"./chunks/framework.BHvCMIhP.js";const h=JSON.parse('{"title":"WAF 与 DDoS 防护:它们能挡什么,挡不了什么","description":"","frontmatter":{},"headers":[],"relativePath":"../cloudBasicsLearning/08-WAF与DDoS防护.md","filePath":"../cloudBasicsLearning/08-WAF与DDoS防护.md","lastUpdated":1779015580000}'),i={name:"../cloudBasicsLearning/08-WAF与DDoS防护.md"};function e(t,a,o,c,r,d){return n(),p("div",null,[...a[0]||(a[0]=[l(`<h1 id="waf-与-ddos-防护-它们能挡什么-挡不了什么" tabindex="-1">WAF 与 DDoS 防护:它们能挡什么,挡不了什么 <a class="header-anchor" href="#waf-与-ddos-防护-它们能挡什么-挡不了什么" aria-label="Permalink to &quot;WAF 与 DDoS 防护:它们能挡什么,挡不了什么&quot;">​</a></h1><blockquote><p>一句话解释:<strong>WAF 主要防应用层的恶意请求,DDoS 防护主要防大流量把你的网络和服务压垮</strong>。</p></blockquote><p>很多人把安全产品想成一个&quot;开了就安全&quot;的开关。现实不是这样。WAF 和 DDoS 防护挡的是不同问题,而且都只能降低风险,不能替你写安全的代码,也不能保证你的业务永远不被打断。</p><p>WAF,Web Application Firewall,更像一个站在 HTTP 入口前的规则检查员。它会看请求路径、参数、Header、Body、User-Agent、IP、国家地区、请求频率,判断这个请求像不像 SQL 注入、XSS、路径扫描、恶意爬虫、漏洞探测。</p><p>DDoS 防护更像网络层的抗压设施。攻击者不一定关心你的业务逻辑,只是用大量流量、大量连接或大量请求把你的带宽、连接数、CPU、上游线路压满,让正常用户进不来。</p><p>最容易混淆的是:<strong>WAF 不等于 DDoS 防护,DDoS 防护也不等于业务安全</strong>。有人疯狂撞你的登录接口,这可能需要 WAF、限流、验证码、账号风控一起做;有人用超大流量打你的 IP,这更接近 DDoS;有人拿到了你的管理员密码,这两个都救不了你。</p><hr><h2 id="一、放在系统哪里" tabindex="-1">一、放在系统哪里 <a class="header-anchor" href="#一、放在系统哪里" aria-label="Permalink to &quot;一、放在系统哪里&quot;">​</a></h2><p>常见链路是:</p><div class="language-text vp-adaptive-theme"><button title="Copy Code" class="copy"></button><span class="lang">text</span><pre class="shiki shiki-themes github-light github-dark vp-code" tabindex="0"><code><span class="line"><span>用户 / 攻击者</span></span>
+<span class="line"><span>  -&gt; DNS</span></span>
+<span class="line"><span>  -&gt; CDN / DDoS 清洗 / WAF</span></span>
+<span class="line"><span>  -&gt; 反向代理或网关</span></span>
+<span class="line"><span>  -&gt; 应用服务</span></span>
+<span class="line"><span>  -&gt; 数据库</span></span></code></pre></div><p>WAF 通常放在 CDN、负载均衡、API Gateway 或云厂商安全服务上。它越靠前,越能在请求到达源站前拦截。</p><p>DDoS 防护也越靠前越有效。原因很简单:如果攻击流量已经打到你的云服务器网卡或机房出口,你的应用再聪明也来不及了。真正的大流量攻击需要在云厂商、CDN、运营商或清洗中心这一层处理。</p><p>一个真实场景:</p><div class="language-text vp-adaptive-theme"><button title="Copy Code" class="copy"></button><span class="lang">text</span><pre class="shiki shiki-themes github-light github-dark vp-code" tabindex="0"><code><span class="line"><span>你做了一个小型 SaaS:</span></span>
+<span class="line"><span>  - 官网和文档走 CDN</span></span>
+<span class="line"><span>  - API 在 api.example.com</span></span>
+<span class="line"><span>  - 登录接口是 /api/login</span></span>
+<span class="line"><span>  - 管理后台是 /admin</span></span>
+<span class="line"><span></span></span>
+<span class="line"><span>某天日志里出现:</span></span>
+<span class="line"><span>  - 大量访问 /wp-admin.php</span></span>
+<span class="line"><span>  - 大量访问 /.env</span></span>
+<span class="line"><span>  - 请求参数里有 &quot;&#39; OR 1=1&quot;</span></span>
+<span class="line"><span>  - 同一个 IP 每秒打 /api/login 几十次</span></span>
+<span class="line"><span></span></span>
+<span class="line"><span>这些更像 WAF、Bot 防护、限流要处理的问题。</span></span>
+<span class="line"><span></span></span>
+<span class="line"><span>另一天出现:</span></span>
+<span class="line"><span>  - 服务器带宽被打满</span></span>
+<span class="line"><span>  - SSH 都连不上</span></span>
+<span class="line"><span>  - 正常请求还没到应用日志就失败</span></span>
+<span class="line"><span>  - 云厂商提示流量异常</span></span>
+<span class="line"><span></span></span>
+<span class="line"><span>这更像 DDoS 或网络层攻击。</span></span></code></pre></div><p>判断问题在哪一层很重要。如果应用日志里能看到大量恶意请求,WAF 和应用限流通常还能发挥作用。如果应用日志里什么都没有,但用户访问超时、服务器带宽满了,问题可能发生在更前面的网络层。</p><hr><h2 id="二、常见套餐和使用限制" tabindex="-1">二、常见套餐和使用限制 <a class="header-anchor" href="#二、常见套餐和使用限制" aria-label="Permalink to &quot;二、常见套餐和使用限制&quot;">​</a></h2><p>WAF 免费或入门能力通常包括一些托管规则,例如常见漏洞扫描拦截、恶意路径拦截、基础 Bot 识别、国家地区规则、简单速率限制。但限制经常出现在这些地方:</p><ul><li>自定义规则数量。</li><li>速率限制规则数量。</li><li>托管规则集是否完整。</li><li>Bot 管理是否可用。</li><li>日志可见性和保留时间。</li><li>是否支持按账号、Token、路径、Header 做精细策略。</li><li>误杀后的调试工具是否足够。</li></ul><p>DDoS 防护的限制通常更硬:</p><ul><li>免费防护只覆盖常见小规模攻击。</li><li>超过清洗能力可能被限速、黑洞或要求升级。</li><li>只保护经过 CDN 或高防入口的流量,不一定保护源站真实 IP。</li><li>某些协议、端口、区域可能不在默认保护范围内。</li><li>大流量攻击的日志和报表可能需要更高套餐。</li></ul><p>小团队特别容易踩的坑是<strong>源站 IP 暴露</strong>。你把域名接到 CDN,以为所有流量都经过防护。但如果源站 IP 曾经被 DNS 解析过、写在历史记录里、出现在邮件 Header、GitHub 配置、错误页、第三方回调白名单里,攻击者可以绕过 CDN 直接打你的服务器。</p><p>另一个坑是<strong>把 WAF 当成修漏洞工具</strong>。例如你的接口没有权限校验,用户改一个 <code>user_id</code> 就能看别人订单。WAF 很难知道这是业务越权。再比如你把管理后台放在公开路径,密码又弱,WAF 也不能保证一定拦住撞库。</p><hr><h2 id="三、小团队建议" tabindex="-1">三、小团队建议 <a class="header-anchor" href="#三、小团队建议" aria-label="Permalink to &quot;三、小团队建议&quot;">​</a></h2><p>小团队不需要一开始购买昂贵的安全套件,但应该尽早建立入口防护的基本层次:</p><div class="language-text vp-adaptive-theme"><button title="Copy Code" class="copy"></button><span class="lang">text</span><pre class="shiki shiki-themes github-light github-dark vp-code" tabindex="0"><code><span class="line"><span>域名</span></span>
+<span class="line"><span>  -&gt; CDN / WAF</span></span>
+<span class="line"><span>  -&gt; 反向代理 / 网关</span></span>
+<span class="line"><span>  -&gt; 应用限流</span></span>
+<span class="line"><span>  -&gt; 权限校验</span></span>
+<span class="line"><span>  -&gt; 日志和告警</span></span></code></pre></div><p>最低限度建议:</p><ul><li>所有公网服务都放在明确的入口后面,不要随便暴露测试端口。</li><li>源站只允许 CDN、负载均衡或网关访问,能用安全组限制就限制。</li><li>登录、注册、短信、邮件、支付、搜索接口必须有限流。</li><li>管理后台加额外保护,例如固定入口、MFA、IP allowlist、单独域名。</li><li>开启基础 WAF 托管规则,但先用观察模式或低强度策略看误杀情况。</li><li>保留访问日志,至少能看到 IP、路径、状态码、延迟、User-Agent。</li><li>设置流量、5xx、登录失败、验证码失败的告警。</li></ul><p>什么时候该升级?</p><ul><li>产品开始收费,攻击会直接影响收入。</li><li>有登录、支付、提现、邀请码、优惠券等容易被刷的功能。</li><li>曾经被扫、被撞库、被恶意注册或被 DDoS。</li><li>有企业客户,需要安全报表和审计。</li><li>源站不能轻易停机,需要更高等级的 DDoS 清洗和应急支持。</li></ul><p>不要把防护只放在云厂商一层。一个更可靠的思路是:</p><ul><li>网络层:不要暴露不必要端口。</li><li>入口层:CDN/WAF/网关做第一道拦截。</li><li>应用层:权限校验、参数校验、业务限流必须自己做。</li><li>账号层:MFA、强密码、登录异常检测。</li><li>运维层:日志、告警、应急预案。</li></ul><p>如果只能先做三件事,优先做:</p><ol><li>隐藏和限制源站入口。</li><li>给高风险接口加限流。</li><li>打开日志和告警。</li></ol><hr><h2 id="四、一句话总结" tabindex="-1">四、一句话总结 <a class="header-anchor" href="#四、一句话总结" aria-label="Permalink to &quot;四、一句话总结&quot;">​</a></h2><p><strong>WAF 负责尽量拦住可识别的恶意 HTTP 请求,DDoS 防护负责尽量吸收大流量冲击;它们是入口防线,不是业务安全、权限设计和成本告警的替代品。</strong></p>`,38)])])}const u=s(i,[["render",e]]);export{h as __pageData,u as default};
