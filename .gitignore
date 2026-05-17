@@ -5,3 +5,5 @@
 **/.obsidian/
 .venv/
 site/
+node_modules/
+docs/.vitepress/dist/
