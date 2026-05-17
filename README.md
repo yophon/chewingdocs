@@ -1,6 +1,6 @@
 # chewingdocs
 
-按主题整理的技术学习文档库，覆盖 Web、AI、AI Infra、后端、系统设计、分布式、网络、操作系统、DevOps、数据工程、算法、程序员数学、Git、终端工程、Go、Rust、Flutter、解释器、安全、Claude Code 等方向。
+按主题整理的技术学习文档库，覆盖 Web、AI、AI Infra、后端、系统设计、分布式、网络、操作系统、DevOps、数据工程、算法、程序员数学、Git、终端工程、Go、Rust、Flutter、解释器、安全、Claude Code、设计模式、云服务等方向。
 
 在线阅读：<https://yophon.github.io/chewingdocs/>
 
@@ -12,6 +12,8 @@
 | AI Infra | 30 | [aiInfraLearning](docs/aiInfraLearning/01-AI工程链总览.md) |
 | 后端学习 | 66 | [backendLearning](docs/backendLearning/01-后端学习路线总览.md) |
 | 前端学习 | 50 | [webLearning](docs/webLearning/01-四大框架总览.md) |
+| 设计模式 | 50 | [designPatternLearning](docs/designPatternLearning/目录.md) |
+| 云服务与互联网基础常识 | 42 | [cloudBasicsLearning](docs/cloudBasicsLearning/01-云服务与互联网基础常识总览.md) |
 | 系统设计 | 30 | [systemDesign](docs/systemDesign/01-系统设计总览.md) |
 | 分布式系统 | 30 | [distributedLearning](docs/distributedLearning/01-分布式系统总览.md) |
 | 网络 | 40 | [networkLearning](docs/networkLearning/01-网络学习路线总览.md) |

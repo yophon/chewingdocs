@@ -8,6 +8,8 @@
 - [AI Infra](aiInfraLearning/01-AI工程链总览.md)
 - [后端学习](backendLearning/01-后端学习路线总览.md)
 - [前端学习](webLearning/01-四大框架总览.md)
+- [设计模式](designPatternLearning/目录.md)
+- [云服务与互联网基础常识](cloudBasicsLearning/01-云服务与互联网基础常识总览.md)
 - [系统设计](systemDesign/01-系统设计总览.md)
 - [分布式系统](distributedLearning/01-分布式系统总览.md)
 - [网络](networkLearning/01-网络学习路线总览.md)
