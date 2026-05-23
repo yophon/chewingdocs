@@ -1,101 +1,315 @@
 # 04-所有权机制：Rust 的灵魂
 
-> "在 C/C++ 中，内存是你自己管的（经常泄漏或越界）；在 Java/Go/JS 中，GC（垃圾回收器）在背后帮你擦屁股；但在 Rust 中，你和编译器在编译阶段就达成契约，决定了内存的生死。"
+> 一句话导读：所有权是 Rust 用编译期规则管理内存的方式，它让程序不依赖 GC，也不把释放内存的责任完全交给人脑。
 
-所有权（Ownership）是 Rust 最独特的功能，它让 Rust 无需 GC 就能保证内存安全。
+在 C/C++ 中，内存释放靠程序员自觉，忘了释放会泄漏，重复释放会崩溃，释放后继续使用会产生未定义行为。在 Java、Go、JavaScript 中，垃圾回收器会在运行时帮你判断对象何时不再使用。Rust 选择第三条路：在编译期确定每个值的所有者和生命周期，离开作用域时自动释放。
 
-## 一、温故知新：栈 (Stack) 与 堆 (Heap)
+## 核心心智模型
 
-在进入所有权之前，必须搞懂堆和栈：
-- **栈 (Stack)**：存取极快。存储大小在编译时已知、固定的数据（如 `i32`, `bool`, 长度固定的数组）。离开作用域时自动弹出清理。
-- **堆 (Heap)**：用于存储编译时大小未知或运行时可能改变的数据（如 `String`, `Vector`）。需要在堆上分配空间并返回一个指针。
+每个值都像一份资产，任意时刻只能有一个“户主”。户主离开作用域，资产就被释放。把资产交给另一个变量或函数，叫移动。想继续使用原资产，要么借用，要么克隆。
 
-在带 GC 的语言中，你不在乎数据在哪。但在 Rust 里，数据在哪决定了它怎么被管理。
+所有权解决的不是语法问题，而是内存安全问题：
 
-## 二、所有权的三大铁律
+- 谁负责释放这块内存？
+- 什么时候释放？
+- 释放后还有没有人继续访问？
+- 有没有两个所有者重复释放同一块内存？
 
-请把这三句话刻在脑子里：
-1. **Rust 中的每一个值都有一个被称为其“所有者”（owner）的变量。**
-2. **值在任一时刻有且只有一个所有者。**
-3. **当所有者离开作用域（scope）时，这个值将被丢弃（drop）。**
+Rust 编译器严格，是因为它要在程序运行前排除这些问题。
 
-```rust
-{                      // s 在这里无效，它尚未声明
-    let s = "hello";   // 从此处起，s 开始有效
-    // 使用 s
-}                      // 此作用域结束，s 失效，内存立即被释放！
-```
+## 栈和堆
 
-## 三、变量与数据的交互方式：Move (移动)
+栈适合大小固定、生命周期简单的数据，例如 `i32`、`bool`、固定长度数组。函数调用结束时，栈帧整体弹出，速度很快。
 
-看看其他语言觉得没问题，但在 Rust 会报错的代码：
+堆适合运行时大小不确定或需要动态增长的数据，例如 `String`、`Vec<T>`。堆分配需要记录指针、长度、容量等元信息，也需要明确什么时候释放。
 
-```rust
-let s1 = String::from("hello"); // String 是堆上的数据
-let s2 = s1;
-
-// println!("{}, world!", s1); // ❌ 报错！value borrowed here after move
-```
-**发生了什么？**
-- `String` 底层由三部分组成：指向存放字符串内容内存的指针、长度、容量。这三个数据存在**栈**上，而实际的字符数据 `"hello"` 存在**堆**上。
-- 当执行 `let s2 = s1;` 时，Rust 只复制了栈上的指针、长度和容量。
-- 如果 s1 和 s2 都有效，当它们离开作用域时，会尝试释放相同的堆内存（二次释放漏洞 Double Free）。
-- 为了保证安全，Rust 在 `let s2 = s1;` 后，**直接作废了 `s1`**。这个操作不叫浅拷贝，在 Rust 中称为 **移动 (Move)**。
-
-此时，数据的"所有权"从 `s1` 转移到了 `s2`。
-
-## 四、变量与数据的交互方式：Clone (克隆)
-
-如果你确实需要深度复制堆上的数据，可以使用 `clone` 方法：
-
-```rust
-let s1 = String::from("hello");
-let s2 = s1.clone();
-
-println!("s1 = {}, s2 = {}", s1, s2); // ✅ 完全没问题，堆内存被复制了一份
-```
-
-## 五、栈上数据：Copy (复制)
-
-那为什么基础类型赋值时不报错呢？
-
-```rust
-let x = 5;
-let y = x;
-println!("x = {}, y = {}", x, y); // ✅ 正确
-```
-
-因为像整型这样在编译时已知大小的类型被整个存储在**栈**上。Rust 提供了一个叫做 `Copy` trait 的特殊标注。如果一个类型实现了 `Copy` trait，那么一个旧的变量在将其赋值给其他变量后仍然可用。
-- 实现了 `Copy` 的：所有整数、浮点数、布尔值、字符、元素全实现了 `Copy` 的元组。
-- 没实现 `Copy` 的：`String`, `Vector`，以及大多数堆上分配的数据。
-
-## 六、所有权与函数传参
-
-将值传递给函数，在语义上与给变量赋值相似。**向函数传递值可能会移动或者复制。**
+以 `String` 为例：
 
 ```rust
 fn main() {
     let s = String::from("hello");
-    takes_ownership(s); // s 的值移动到函数里了
-    // println!("{}", s); // ❌ 报错！s 已经没有所有权了
-
-    let x = 5;
-    makes_copy(x);      // x 实现了 Copy，所以只是复制进去了
-    println!("{}", x);  // ✅ x 依然有效
-}
-
-fn takes_ownership(some_string: String) {
-    println!("{}", some_string);
-} // 这里 some_string 离开作用域并调用 drop，占用的内存被释放
-
-fn makes_copy(some_integer: i32) {
-    println!("{}", some_integer);
+    println!("{s}");
 }
 ```
 
-**问题来了**：如果每次传参都交出所有权，函数用完我还想用怎么办？难道每次都要让函数以元组形式把所有权 `return` 回来吗？
+变量 `s` 本身在栈上，里面存着指向堆内存的指针、长度、容量。真正的 UTF-8 字节在堆上。`s` 离开作用域时，Rust 自动调用 `drop` 释放堆内存。
 
-这就是下一篇要解决的问题！
+## 所有权三条规则
+
+Rust 所有权规则可以压缩成三句话：
+
+1. 每个值都有一个所有者。
+2. 同一时刻只能有一个所有者。
+3. 所有者离开作用域，值会被丢弃。
+
+```rust
+fn main() {
+    {
+        let message = String::from("hello");
+        println!("{message}");
+    } // message 到这里离开作用域，堆内存被释放
+}
+```
+
+这段代码没有手动 `free`，也没有 GC。释放动作由编译器插入在确定的位置。
+
+## Move：所有权转移
+
+看一段新手最容易困惑的代码：
+
+```rust
+fn main() {
+    let s1 = String::from("hello");
+    let s2 = s1;
+
+    println!("{s2}");
+    // println!("{s1}");
+}
+```
+
+`let s2 = s1;` 之后，`s1` 不再可用。因为 `String` 指向堆内存，如果简单复制栈上的指针、长度、容量，就会出现两个变量指向同一块堆内存。两个变量离开作用域时都尝试释放，就会二次释放。
+
+Rust 的修正策略是：赋值后所有权从 `s1` 移动到 `s2`，旧绑定失效。它不是浅拷贝，而是 move。
+
+如果取消最后的 `println!("{s1}")` 注释，会看到类似：
+
+```text
+error[E0382]: borrow of moved value: `s1`
+```
+
+修正方式有两种。确实需要两份数据，就克隆：
+
+```rust
+fn main() {
+    let s1 = String::from("hello");
+    let s2 = s1.clone();
+
+    println!("s1 = {s1}, s2 = {s2}");
+}
+```
+
+只是临时读取，就借用。借用下一篇详细讲：
+
+```rust
+fn main() {
+    let s1 = String::from("hello");
+    print_message(&s1);
+    println!("still usable: {s1}");
+}
+
+fn print_message(message: &String) {
+    println!("{message}");
+}
+```
+
+## Copy：栈上小值的复制
+
+基础数字类型不会 move：
+
+```rust
+fn main() {
+    let x = 5;
+    let y = x;
+
+    println!("x = {x}, y = {y}");
+}
+```
+
+因为 `i32` 实现了 `Copy`，赋值时直接复制值本身，没有堆资源需要协调释放。
+
+常见 `Copy` 类型包括：
+
+- 整数、浮点数、布尔、字符
+- 只包含 `Copy` 类型的元组
+- 一些简单值类型
+
+`String`、`Vec<T>` 这类拥有堆资源的类型通常不实现 `Copy`。
+
+## 函数传参也会移动
+
+把值传给函数，和赋值一样可能发生 move：
+
+```rust
+fn main() {
+    let name = String::from("Rust");
+    take_name(name);
+    // println!("{name}");
+
+    let year = 2026;
+    print_year(year);
+    println!("year still usable: {year}");
+}
+
+fn take_name(name: String) {
+    println!("name = {name}");
+}
+
+fn print_year(year: i32) {
+    println!("year = {year}");
+}
+```
+
+`name` 是 `String`，传入 `take_name` 后所有权移动到函数参数。函数结束时参数离开作用域，字符串被释放。`year` 是 `i32`，实现 `Copy`，所以传参只是复制。
+
+如果确实想让函数处理后把所有权还回来，可以返回它：
+
+```rust
+fn main() {
+    let message = String::from("hello");
+    let message = add_suffix(message);
+
+    println!("{message}");
+}
+
+fn add_suffix(mut value: String) -> String {
+    value.push_str(", world");
+    value
+}
+```
+
+但大量这样写会很笨重。更常见的方案是引用和借用。
+
+## 可编译综合示例
+
+```rust
+#[derive(Debug)]
+struct Report {
+    title: String,
+    score: u32,
+}
+
+fn submit(report: Report) {
+    println!("submit: {:?}", report);
+}
+
+fn main() {
+    let draft = Report {
+        title: String::from("Rust ownership"),
+        score: 95,
+    };
+
+    println!("draft title before move: {}", draft.title);
+
+    submit(draft);
+
+    // draft 已经移动到 submit 中，不能再使用
+    // println!("{:?}", draft);
+
+    let retries = 3;
+    let copied_retries = retries;
+    println!("retries = {retries}, copied = {copied_retries}");
+}
+```
+
+这段代码里 `Report` 拥有 `String`，所以整个结构体默认也不是 `Copy`。传给 `submit` 后，所有权移动。
+
+## 常见编译器错误与修正
+
+### 错误 1：使用已经移动的值
+
+```rust
+fn main() {
+    let s = String::from("hello");
+    let t = s;
+    println!("{s}");
+    println!("{t}");
+}
+```
+
+错误：
+
+```text
+error[E0382]: borrow of moved value: `s`
+```
+
+修正一：使用 `clone`。
+
+```rust
+fn main() {
+    let s = String::from("hello");
+    let t = s.clone();
+    println!("{s}");
+    println!("{t}");
+}
+```
+
+修正二：如果只是读取，传引用或使用引用。
+
+```rust
+fn main() {
+    let s = String::from("hello");
+    let t = &s;
+    println!("{s}");
+    println!("{t}");
+}
+```
+
+### 错误 2：结构体部分移动
+
+```rust
+struct User {
+    name: String,
+    age: u32,
+}
+
+fn main() {
+    let user = User {
+        name: String::from("alice"),
+        age: 18,
+    };
+
+    let name = user.name;
+    println!("{name}");
+    // println!("{}", user.name);
+    println!("{}", user.age);
+}
+```
+
+`user.name` 被移动走后，不能再使用这个字段。但 `user.age` 是 `Copy` 字段，仍可使用。工程上，如果后面还要整体使用 `user`，不要移动字段，改成借用：
+
+```rust
+struct User {
+    name: String,
+    age: u32,
+}
+
+fn main() {
+    let user = User {
+        name: String::from("alice"),
+        age: 18,
+    };
+
+    let name = &user.name;
+    println!("{name}");
+    println!("{} {}", user.name, user.age);
+}
+```
+
+## 为什么编译器这么限制
+
+所有权限制看起来像是“编译器不信任我”，但它真正防的是三类运行时灾难：
+
+- use after free：内存释放后继续访问。
+- double free：同一块内存释放两次。
+- iterator/reference invalidation：数据重新分配后，旧指针仍然被使用。
+
+在有 GC 的语言里，这些问题被运行时系统隐藏；在 C/C++ 里，它们可能变成线上崩溃或安全漏洞。Rust 把规则前移到编译期，所以你会更早遇到错误，也更早修掉错误。
+
+## 工程判断
+
+所有权设计会影响 API：
+
+- 函数需要消费数据，参数用 `T`。
+- 函数只读数据，参数优先用 `&T` 或更通用的 `&str`、`&[T]`。
+- 函数要修改数据，参数用 `&mut T`。
+- 确实需要独立副本时再 `clone`，不要为了绕过编译器盲目克隆。
+
+`clone` 不是坏事，但它应该表达真实需求：我要一份独立数据。如果只是为了让代码编译通过，通常说明所有权边界还没想清楚。
+
+## 结尾总结
+
+所有权是 Rust 的内存管理模型：值只有一个所有者，赋值和传参可能移动所有权，离开作用域自动释放。它的限制不是为了增加学习成本，而是为了在编译期消灭一整类内存错误。下一篇的引用与借用，就是在不转移所有权的前提下使用数据。
 
 ---
-**下一篇：** `05-引用与借用.md`，如何只“借用”数据而不抢走“所有权”。
+
+**下一篇：** `05-引用与借用.md`，学习如何只借数据，不拿走数据。
