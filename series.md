@@ -1,6 +1,6 @@
 # 学习系列
 
-这里是全部学习系列的统一入口。点击任意系列会进入该系列第 01 章。
+这里是全部学习系列的统一入口。点击任意系列会进入该系列第 01 章；如果系列还没有拆出正式章节，会先进入写作计划大纲。
 
 [series-table:start]: #
 
@@ -25,6 +25,9 @@
 | Go | [Go学习路线总览](/goLearning/01-Go学习路线总览) |
 | Rust | [Rust学习路线总览](/rustLearning/01-Rust学习路线总览) |
 | Flutter | [状态管理总览](/flutterLearning/01-状态管理总览) |
+| Android 原生开发 | [现代Android心智总览](/androidNativeLearning/01-现代Android心智总览) |
+| iOS 原生开发 | [Swift6-iOS18-SwiftUI心智总览](/iosNativeLearning/01-Swift6-iOS18-SwiftUI心智总览) |
+| Godot 游戏开发 | [Godot4.6与2D独立游戏心智总览](/godotLearning/01-Godot4.6与2D独立游戏心智总览) |
 | 解释器 | [解释器总览](/interpreterLearning/01-解释器总览) |
 | 安全 | [安全总览](/securityLearning/01-安全总览) |
 | Claude Code | [Claude-Code总览与心智](/claudeLearning/01-Claude-Code总览与心智) |

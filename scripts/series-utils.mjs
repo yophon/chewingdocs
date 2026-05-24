@@ -13,6 +13,7 @@ export function titleFromFile(file) {
 }
 
 export function displayTitleFromFile(file) {
+  if (file === "00-写作计划.md") return "写作计划";
   return titleFromFile(file).replace(/^\d+\.\s*/, "");
 }
 
@@ -29,7 +30,12 @@ export function chapterFiles(dir, { includePlans = false } = {}) {
 }
 
 export function firstReadableFile(dir) {
-  return chapterFiles(dir)[0] ?? null;
+  const chapters = chapterFiles(dir);
+  if (chapters[0]) return chapters[0];
+
+  const planFile = "00-写作计划.md";
+  const planPath = path.join(repoRoot, dir, planFile);
+  return fs.existsSync(planPath) ? planFile : null;
 }
 
 export function firstReadableLink(dir, { extension = false, absolute = true } = {}) {
@@ -53,9 +59,9 @@ export function siteSeriesRows() {
 }
 
 export function seriesPageRows() {
-  return series.map(({ text, dir }) => {
+  return series.map(({ text, dir, planTitle }) => {
     const file = firstReadableFile(dir);
-    const title = file ? displayTitleFromFile(file) : dir;
+    const title = file === "00-写作计划.md" && planTitle ? planTitle : file ? displayTitleFromFile(file) : dir;
     return `| ${text} | [${title}](${firstReadableLink(dir)}) |`;
   });
 }

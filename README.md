@@ -1,6 +1,6 @@
 # chewingdocs
 
-按主题整理的技术学习文档库，覆盖 Web、AI、AI Infra、后端、系统设计、分布式、网络、操作系统、DevOps、数据工程、算法、程序员数学、Git、终端工程、Go、Rust、Flutter、解释器、安全、Claude Code、设计模式、云服务等方向。
+按主题整理的技术学习文档库，覆盖 Web、AI、AI Infra、后端、系统设计、分布式、网络、操作系统、DevOps、数据工程、算法、程序员数学、Git、终端工程、Go、Rust、Flutter、Godot、解释器、安全、Claude Code、设计模式、云服务等方向。
 
 在线阅读：<https://yophon.github.io/chewingdocs/>
 
@@ -29,6 +29,9 @@
 | Go | 31 | [goLearning](goLearning/01-Go学习路线总览.md) |
 | Rust | 31 | [rustLearning](rustLearning/01-Rust学习路线总览.md) |
 | Flutter | 43 | [flutterLearning](flutterLearning/01-状态管理总览.md) |
+| Android 原生开发 | 31 | [androidNativeLearning](androidNativeLearning/01-现代Android心智总览.md) |
+| iOS 原生开发 | 31 | [iosNativeLearning](iosNativeLearning/01-Swift6-iOS18-SwiftUI心智总览.md) |
+| Godot 游戏开发 | 31 | [godotLearning](godotLearning/01-Godot4.6与2D独立游戏心智总览.md) |
 | 解释器 | 32 | [interpreterLearning](interpreterLearning/01-解释器总览.md) |
 | 安全 | 31 | [securityLearning](securityLearning/01-安全总览.md) |
 | Claude Code | 31 | [claudeLearning](claudeLearning/01-Claude-Code总览与心智.md) |

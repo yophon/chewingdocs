@@ -60,7 +60,7 @@ function candidatePaths(fromFile, href) {
     : path.resolve(path.dirname(fromFile), cleanHref);
 
   const candidates = [base];
-  if (!path.extname(base)) {
+  if (!base.endsWith(".md")) {
     candidates.push(`${base}.md`, path.join(base, "index.md"));
   }
   return candidates;

@@ -28,7 +28,11 @@ function itemsForDir(dir: string): DefaultTheme.SidebarItem[] {
 }
 
 function firstReadableLink(dir: string) {
-  return itemsForDir(dir).find((item) => item.text !== "目录")?.link ?? `/${dir}/`;
+  const firstItem = itemsForDir(dir).find((item) => item.text !== "目录");
+  if (firstItem) return firstItem.link;
+
+  const planFile = path.join(docsRoot, dir, "00-写作计划.md");
+  return fs.existsSync(planFile) ? `/${dir}/00-写作计划` : `/${dir}/`;
 }
 
 function sidebar(): DefaultTheme.Sidebar {

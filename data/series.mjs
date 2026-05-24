@@ -18,6 +18,9 @@ export const series = [
   { text: "Go", dir: "goLearning" },
   { text: "Rust", dir: "rustLearning" },
   { text: "Flutter", dir: "flutterLearning" },
+  { text: "Android 原生开发", dir: "androidNativeLearning" },
+  { text: "iOS 原生开发", dir: "iosNativeLearning" },
+  { text: "Godot 游戏开发", dir: "godotLearning" },
   { text: "解释器", dir: "interpreterLearning" },
   { text: "安全", dir: "securityLearning" },
   { text: "Claude Code", dir: "claudeLearning" }
