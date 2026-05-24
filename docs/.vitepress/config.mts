@@ -92,10 +92,9 @@ export default defineConfig({
   title: "chewingdocs",
   description: "按主题整理的技术学习文档库",
   srcDir: "..",
-  srcExclude: ["docs/**", "site/**", "node_modules/**"],
+  srcExclude: ["README.md", "docs/**", "site/**", "node_modules/**"],
   base: "/chewingdocs/",
   cleanUrls: true,
-  ignoreDeadLinks: true,
   lastUpdated: true,
   markdown: {
     html: false,
@@ -112,6 +111,26 @@ export default defineConfig({
     logo: "/logo.svg",
     nav: nav(),
     sidebar: sidebar(),
+    search: {
+      provider: "local",
+      options: {
+        detailedView: false,
+        miniSearch: {
+          _splitIntoSections(_file, html) {
+            const title = html.match(/<h1[^>]*>(.*?)<a /)?.[1]?.replace(/<[^>]+>/g, "") ?? "";
+            const text = html
+              .replace(/<script[\s\S]*?<\/script>/g, "")
+              .replace(/<style[\s\S]*?<\/style>/g, "")
+              .replace(/<[^>]+>/g, " ")
+              .replace(/\s+/g, " ")
+              .trim()
+              .slice(0, 1200);
+
+            return [{ titles: title ? [title] : [], text }];
+          }
+        }
+      }
+    },
     outline: {
       level: [2, 3],
       label: "本页目录"
