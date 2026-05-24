@@ -51,6 +51,10 @@ function itemsForDir(dir: string): DefaultTheme.SidebarItem[] {
     }));
 }
 
+function firstReadableLink(dir: string) {
+  return itemsForDir(dir).find((item) => item.text !== "目录")?.link ?? `/${dir}/`;
+}
+
 function sidebar(): DefaultTheme.Sidebar {
   return Object.fromEntries(
     series.map(({ text, dir }) => [
@@ -68,11 +72,12 @@ function sidebar(): DefaultTheme.Sidebar {
 function nav(): DefaultTheme.NavItem[] {
   return [
     { text: "首页", link: "/" },
+    { text: "学习系列", link: "/series" },
     {
-      text: "学习系列",
+      text: "主题",
       items: series.map(({ text, dir }) => ({
         text,
-        link: `/${dir}/${itemsForDir(dir)[0]?.link.split("/").pop() ?? ""}`
+        link: firstReadableLink(dir)
       }))
     },
     { text: "未来规划", link: "/未来系列规划" }

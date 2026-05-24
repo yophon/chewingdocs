@@ -8,10 +8,10 @@ hero:
   actions:
     - theme: brand
       text: 开始阅读
-      link: /cloudBasicsLearning/01-云服务与互联网基础常识总览
+      link: /series
     - theme: alt
       text: 查看系列
-      link: /designPatternLearning/目录
+      link: /series
 
 features:
   - title: 云服务与互联网基础
@@ -19,7 +19,7 @@ features:
     link: /cloudBasicsLearning/01-云服务与互联网基础常识总览
   - title: 设计模式
     details: 从变化点、代码边界和工程代价理解 GoF、MVC、MVVM、DDD、微前端等模式。
-    link: /designPatternLearning/目录
+    link: /designPatternLearning/01-设计模式总览
   - title: AI 与 AI Infra
     details: 从 Transformer、Agent、RAG 到 GPU、推理引擎、并行训练和部署成本。
     link: /aiLearning/01-AI学习路线总览
@@ -42,7 +42,7 @@ features:
 | AI Infra | [aiInfraLearning](/aiInfraLearning/01-AI工程链总览) |
 | 后端学习 | [backendLearning](/backendLearning/01-后端学习路线总览) |
 | 前端学习 | [webLearning](/webLearning/01-四大框架总览) |
-| 设计模式 | [designPatternLearning](/designPatternLearning/目录) |
+| 设计模式 | [designPatternLearning](/designPatternLearning/01-设计模式总览) |
 | 云服务与互联网基础常识 | [cloudBasicsLearning](/cloudBasicsLearning/01-云服务与互联网基础常识总览) |
 | 系统设计 | [systemDesign](/systemDesign/01-系统设计总览) |
 | 分布式系统 | [distributedLearning](/distributedLearning/01-分布式系统总览) |
