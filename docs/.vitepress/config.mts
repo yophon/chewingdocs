@@ -34,7 +34,7 @@ function stripExt(file: string) {
 }
 
 function titleFromFile(file: string) {
-  return stripExt(file).replace(/^\d+-/, "");
+  return stripExt(file).replace(/^(\d+)-/, "$1. ");
 }
 
 function itemsForDir(dir: string): DefaultTheme.SidebarItem[] {
