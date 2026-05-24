@@ -8,7 +8,7 @@ hero:
   actions:
     - theme: brand
       text: 开始阅读
-      link: /series
+      link: /cloudBasicsLearning/01-云服务与互联网基础常识总览
     - theme: alt
       text: 查看系列
       link: /series
