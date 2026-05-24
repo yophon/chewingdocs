@@ -161,7 +161,7 @@ networks:
 
 Compose 自动加载项目根目录的 `.env`：
 
-```env
+```text
 # .env
 MYSQL_ROOT_PASSWORD=root
 MYSQL_DATABASE=demo

@@ -189,7 +189,7 @@ claude
 
 把 27 / 28 篇的 Justfile 接进来。在项目根加一段 recipe:
 
-```just
+```text
 # Justfile
 
 # 起开发 session:tmux + claude + 你的 shell
@@ -278,7 +278,7 @@ set -g @continuum-save-interval '15'
 
 15 篇 ssh 深用 + 16/17 篇 tmux 配过的话,这一步就是几行:
 
-```ssh
+```text
 # ~/.ssh/config
 Host dev
     HostName dev-box.example.com
@@ -579,7 +579,7 @@ $ git branch -D refactor-branch
 
 ### 7.4 配 Justfile 一键 worktree
 
-```just
+```text
 # Justfile
 
 # 在 ../<project>-<branch> 创建 worktree 并起 Claude
@@ -1101,7 +1101,7 @@ CI / batch:
 
 ### 14.2 ssh agent forwarding:共享 GitHub key
 
-```ssh
+```text
 # ~/.ssh/config
 Host dev
     HostName dev.example.com

@@ -91,7 +91,7 @@ D - Duration     延迟分布(P50 / P99)
 
 针对一个 HTTP 服务,**这三条 PromQL 几乎是固定写法**:
 
-```promql
+```text
 # R: 当前 5min QPS
 sum(rate(http_requests_total{service="order"}[5m]))
 
@@ -204,7 +204,7 @@ Saturation(饱和度):
 
 ### 3.4 USE 在 node_exporter 的常见查询
 
-```promql
+```text
 # CPU U:  CPU 利用率(1 - idle)
 1 - avg by (instance) (rate(node_cpu_seconds_total{mode="idle"}[5m]))
 

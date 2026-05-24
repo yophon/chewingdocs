@@ -36,6 +36,8 @@ features:
 
 ## 学习系列
 
+[series-table:start]: #
+
 | 系列 | 入口 |
 | --- | --- |
 | AI 学习 | [aiLearning](/aiLearning/01-AI学习路线总览) |
@@ -60,5 +62,7 @@ features:
 | 解释器 | [interpreterLearning](/interpreterLearning/01-解释器总览) |
 | 安全 | [securityLearning](/securityLearning/01-安全总览) |
 | Claude Code | [claudeLearning](/claudeLearning/01-Claude-Code总览与心智) |
+
+[series-table:end]: #
 
 更多规划见：[未来系列规划](/未来系列规划)。

@@ -97,7 +97,7 @@ increase(counter[1m]) 在 t=60 时:
 
 **rate 是 PromQL 算 Counter 速率的默认答案**——除非你有明确理由用 irate 或 increase,**永远先选 rate**。
 
-```promql
+```text
 # 每秒请求数(QPS)
 sum(rate(http_requests_total[5m]))
 
@@ -117,7 +117,7 @@ sum(rate(http_requests_total{status="5xx"}[5m]))
 
 ### 2.3 irate:只看最后两个点,适合"瞬时尖峰"
 
-```promql
+```text
 # 实时 CPU 使用率(亚分钟尖峰可见)
 irate(node_cpu_seconds_total{mode="user"}[1m])
 ```
@@ -143,7 +143,7 @@ irate:   只用最后两个 → 瞬时速率 2.0/s
 
 **这一节是这一章的重点**——大量团队**用 increase 算 QPS,而且不知道自己写错了**。
 
-```promql
+```text
 # 错的(看起来对,实际错):
 increase(http_requests_total[5m])
 # 工程师以为:"过去 5 分钟的 QPS"
@@ -158,7 +158,7 @@ increase(http_requests_total[5m])
 
 **那 increase 在什么时候用**?**只有当你想知道"某个时间窗口内总共多少"这个绝对值时**。
 
-```promql
+```text
 # 对的用法:
 # 过去 1 小时一共发生多少次错误
 increase(http_errors_total[1h])
@@ -234,7 +234,7 @@ increase(http_requests_total[24h])
 
 直接看代码:
 
-```promql
+```text
 # === 错的写法 1:先 quantile 再聚合 ===
 avg(histogram_quantile(0.99, 
   rate(http_request_duration_seconds_bucket[5m])
@@ -318,7 +318,7 @@ p99 在 [0.5, 1] 之间,线性插值:
 
 ### 3.3 多实例聚合:正确的层次
 
-```promql
+```text
 # 100 个 Pod,每个 Pod 自己的 p99 (单独看每个 Pod)
 histogram_quantile(0.99,
   sum by (le, instance) (rate(http_request_duration_seconds_bucket[5m]))
@@ -344,7 +344,7 @@ histogram_quantile(0.99,
 
 某团队的 dashboard 上有这条:
 
-```promql
+```text
 histogram_quantile(0.99,
   rate(http_request_duration_seconds_bucket[5m])
 )
@@ -354,7 +354,7 @@ histogram_quantile(0.99,
 
 **修复**:
 
-```promql
+```text
 histogram_quantile(0.99,
   sum by (le) (rate(http_request_duration_seconds_bucket[5m]))
 )
@@ -399,7 +399,7 @@ groups:
 
 ### 4.1 服务 QPS(请求速率)
 
-```promql
+```text
 # 全局
 sum(rate(http_requests_total[5m]))
 
@@ -420,7 +420,7 @@ sum by (service, endpoint) (rate(http_requests_total[5m]))
 
 ### 4.2 错误率(5xx ratio)
 
-```promql
+```text
 # 全局错误率
 sum(rate(http_requests_total{status="5xx"}[5m]))
   /
@@ -440,7 +440,7 @@ sum by (service) (rate(http_requests_total[5m]))
 - **status label 必须 normalize 成 2xx/4xx/5xx**(不是具体 200/404/500),否则筛选条件麻烦
 - **分母为 0 → NaN**:某段时间没请求,这个表达式返回 NaN。**告警判定要带 `or vector(0)` 兜底**
 
-```promql
+```text
 # 防御性写法(NaN 时返回 0)
 (
   sum by (service) (rate(http_requests_total{status="5xx"}[5m]))
@@ -453,7 +453,7 @@ sum by (service) (rate(http_requests_total[5m])) * 0
 
 ### 4.3 P99 延迟
 
-```promql
+```text
 # 全局 p99(必经 Recording Rule)
 histogram_quantile(0.99,
   sum by (le) (rate(http_request_duration_seconds_bucket[5m]))
@@ -480,7 +480,7 @@ histogram_quantile(0.99, sum by (le) (rate(...[5m])))   # 99 分位
 
 ### 4.4 CPU 饱和度
 
-```promql
+```text
 # 节点 CPU 使用率(USE 方法)
 1 - avg by (instance) (
   rate(node_cpu_seconds_total{mode="idle"}[5m])
@@ -509,7 +509,7 @@ sum by (pod) (kube_pod_container_resource_limits{resource="cpu"})
 
 ### 4.5 容量预测:predict_linear
 
-```promql
+```text
 # 预测磁盘是否会在 24 小时内被写满
 predict_linear(node_filesystem_avail_bytes[1h], 24 * 3600) < 0
 # 含义:用过去 1 小时的下跌趋势,预测 24h 后的余量
@@ -549,7 +549,7 @@ predict_linear(some_metric[1h], 6 * 3600) > 10000
 
 ### 5.1 offset:看"过去某个时间点"的值
 
-```promql
+```text
 # 当前 QPS
 sum(rate(http_requests_total[5m]))
 
@@ -578,7 +578,7 @@ sum(rate(http_requests_total[5m] offset 7d))
 
 `@` 是 Prom 2.25+ 的新特性,让你**固定 PromQL 的"现在时间"**:
 
-```promql
+```text
 # 用 @end() 锚定到 dashboard 选的时间范围结尾
 some_metric @ end()
 
@@ -591,7 +591,7 @@ some_metric @ 1700000000
 
 **典型应用**:
 
-```promql
+```text
 # 计算"从 t0 到现在的累计增长率"
 (
   http_requests_total
@@ -609,7 +609,7 @@ some_metric @ 1700000000
 
 **subquery 让你在 PromQL 里嵌一个"内层 range query"**:
 
-```promql
+```text
 # 用 5 分钟一段的 rate 作为新的"指标",再算它的 max
 max_over_time(
   rate(http_requests_total[5m])[1h:1m]
@@ -624,7 +624,7 @@ max_over_time(
 - **算"高峰 QPS"**(过去 1 小时最高的 5m 速率)
 - **算"长尾事件"**(过去 24h 出现过几次某情况)
 
-```promql
+```text
 # 过去 24h 错误率超 1% 的总分钟数
 count_over_time(
   ((sum(rate(http_requests_total{status="5xx"}[5m]))
@@ -737,7 +737,7 @@ scrape_interval = 15s,但 A 和 B 不同步
 
 某团队 Grafana 上的"产品页 P99 延迟"panel:
 
-```promql
+```text
 avg(
   histogram_quantile(
     0.99,
@@ -781,14 +781,14 @@ avg(
 
 **第二步**:**改 PromQL**。
 
-```promql
+```text
 # 改后(全局 P99)
 histogram_quantile(0.99,
   sum by (le) (rate(product_page_duration_seconds_bucket[5m]))
 )
 ```
 
-```promql
+```text
 # 改后(按 endpoint 拆 P99)
 histogram_quantile(0.99,
   sum by (le, endpoint) (rate(product_page_duration_seconds_bucket[5m]))
@@ -827,7 +827,7 @@ groups:
 
 **第四步**:**Dashboard 改成查 Recording Rule 产物**。
 
-```promql
+```text
 # Dashboard panel 1:全局 P99
 sum(endpoint:product_page_duration_seconds:p99_5m)
 
@@ -905,7 +905,7 @@ PromQL 静默返回 NaN 一半时间。**最小 `[1m]`(配 15s scrape),稳妥 `[
 
 ### 8.6 分母为 0 返回 NaN,告警永远不响
 
-```promql
+```text
 # 错的写法
 rate(errors[5m]) / rate(total[5m])    # total = 0 时 NaN,告警条件永远不满足
 

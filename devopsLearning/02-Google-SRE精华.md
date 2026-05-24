@@ -839,7 +839,7 @@ USE(Brendan Gregg 提出):
 
 ### 7.1 错误预算的 PromQL 计算
 
-```promql
+```text
 # 假设有指标:http_requests_total{status, service}
 
 # 1. 计算当前月的成功率(滚动 30 天)

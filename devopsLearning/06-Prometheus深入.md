@@ -971,7 +971,7 @@ spec:
 
 ### 9.6 PromQL 写错把 cardinality 拉爆
 
-```promql
+```text
 # 错的:用 rate() 还带高基数 label
 rate(http_requests_total[5m])                # 保留了所有原始 label
 sum by (user_id) (rate(...))                 # ← 暴露 user_id 维度

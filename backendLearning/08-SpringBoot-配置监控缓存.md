@@ -108,7 +108,7 @@ MDC.clear();
 
 ## 五、Actuator(健康 / 指标 / 信息)
 
-```gradle
+```text
 implementation 'org.springframework.boot:spring-boot-starter-actuator'
 ```
 
@@ -164,7 +164,7 @@ public class RedisHealthIndicator implements HealthIndicator {
 
 Micrometer 是 JVM 世界的"SLF4J for metrics",对接 Prometheus / Datadog / InfluxDB / NewRelic。
 
-```gradle
+```text
 implementation 'io.micrometer:micrometer-registry-prometheus'
 ```
 
@@ -207,7 +207,7 @@ public class OrderController {
 
 注解式缓存,支持本地 / Redis / Caffeine。
 
-```gradle
+```text
 implementation 'org.springframework.boot:spring-boot-starter-data-redis'
 implementation 'org.springframework.boot:spring-boot-starter-cache'
 ```

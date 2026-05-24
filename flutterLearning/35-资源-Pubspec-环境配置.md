@@ -328,7 +328,7 @@ flavor = "同一份代码,不同应用 ID / 名称 / 图标 / 配置"。常见:
 
 `android/app/build.gradle`:
 
-```gradle
+```text
 android {
     flavorDimensions "default"
 
@@ -442,7 +442,7 @@ dart fix --apply      # 自动修
 
 `android/app/build.gradle`:
 
-```gradle
+```text
 android {
     namespace "com.example.myapp"
     compileSdkVersion 34

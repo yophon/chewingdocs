@@ -83,7 +83,7 @@ components:
 
 **老的 Springfox 已弃维护,新项目一律用 springdoc**。
 
-```gradle
+```text
 implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.6.0'
 ```
 

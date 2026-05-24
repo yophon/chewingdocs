@@ -199,7 +199,7 @@ public List<User> list(...) { ... }
 
 ### 1. 引入
 
-```gradle
+```text
 implementation 'org.apache.shardingsphere:shardingsphere-jdbc-core:5.5.0'
 ```
 

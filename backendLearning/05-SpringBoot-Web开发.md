@@ -135,7 +135,7 @@ public class WrapAdvice implements ResponseBodyAdvice<Object> {
 
 加依赖:
 
-```gradle
+```text
 implementation 'org.springframework.boot:spring-boot-starter-validation'
 ```
 
@@ -369,7 +369,7 @@ public class User {
 
 ## 十一、API 文档:OpenAPI
 
-```gradle
+```text
 implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.6.0'
 ```
 

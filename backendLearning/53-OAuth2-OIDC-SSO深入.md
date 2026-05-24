@@ -305,7 +305,7 @@ public void delete(Long id) { ... }
 
 这种"维度多"的规则用 RBAC 表达就是几百个角色,用 ABAC 就一条规则:
 
-```rego
+```text
 # OPA Rego 规则
 allow {
     input.user.dept == input.resource.dept

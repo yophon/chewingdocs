@@ -1,33 +1,9 @@
 import fs from "node:fs";
 import path from "node:path";
+import { series } from "../../data/series.mjs";
 import { defineConfig, type DefaultTheme } from "vitepress";
 
 const docsRoot = path.resolve(__dirname, "../..");
-
-const series: Array<{ text: string; dir: string }> = [
-  { text: "AI 学习", dir: "aiLearning" },
-  { text: "AI Infra", dir: "aiInfraLearning" },
-  { text: "后端学习", dir: "backendLearning" },
-  { text: "前端学习", dir: "webLearning" },
-  { text: "设计模式", dir: "designPatternLearning" },
-  { text: "云服务与互联网基础常识", dir: "cloudBasicsLearning" },
-  { text: "系统设计", dir: "systemDesign" },
-  { text: "分布式系统", dir: "distributedLearning" },
-  { text: "网络", dir: "networkLearning" },
-  { text: "操作系统", dir: "osLearning" },
-  { text: "DevOps / SRE", dir: "devopsLearning" },
-  { text: "数据工程", dir: "dataEngineering" },
-  { text: "算法", dir: "algorithmLearning" },
-  { text: "程序员的数学", dir: "mathForCS" },
-  { text: "Git", dir: "gitLearning" },
-  { text: "终端工程", dir: "terminalLearning" },
-  { text: "Go", dir: "goLearning" },
-  { text: "Rust", dir: "rustLearning" },
-  { text: "Flutter", dir: "flutterLearning" },
-  { text: "解释器", dir: "interpreterLearning" },
-  { text: "安全", dir: "securityLearning" },
-  { text: "Claude Code", dir: "claudeLearning" }
-];
 
 function stripExt(file: string) {
   return file.replace(/\.md$/, "");
@@ -43,7 +19,7 @@ function itemsForDir(dir: string): DefaultTheme.SidebarItem[] {
 
   return fs
     .readdirSync(fullDir)
-    .filter((file) => file.endsWith(".md") && file !== "00-写作计划.md")
+    .filter((file) => file.endsWith(".md") && file !== "00-写作计划.md" && file !== "目录.md")
     .sort((a, b) => a.localeCompare(b, "zh-Hans-CN", { numeric: true }))
     .map((file) => ({
       text: file === "目录.md" ? "目录" : titleFromFile(file),
@@ -92,10 +68,15 @@ export default defineConfig({
   title: "chewingdocs",
   description: "按主题整理的技术学习文档库",
   srcDir: "..",
-  srcExclude: ["README.md", "docs/**", "site/**", "node_modules/**"],
+  srcExclude: ["README.md", "**/目录.md", "docs/**", "site/**", "node_modules/**"],
   base: "/chewingdocs/",
   cleanUrls: true,
   lastUpdated: true,
+  vite: {
+    build: {
+      chunkSizeWarningLimit: 3000
+    }
+  },
   markdown: {
     html: false,
     lineNumbers: false,

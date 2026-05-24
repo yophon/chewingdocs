@@ -46,7 +46,7 @@ spring:
 
 ## 三、JdbcTemplate(最薄那层)
 
-```gradle
+```text
 implementation 'org.springframework.boot:spring-boot-starter-jdbc'
 ```
 
@@ -75,7 +75,7 @@ public class UserDao {
 
 ## 四、JPA / Spring Data JPA
 
-```gradle
+```text
 implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
 runtimeOnly    'com.mysql:mysql-connector-j'
 ```
@@ -148,7 +148,7 @@ page.getTotalPages();
 
 ## 五、MyBatis(国内主流)
 
-```gradle
+```text
 implementation 'org.mybatis.spring.boot:mybatis-spring-boot-starter:3.0.3'
 ```
 

@@ -75,7 +75,7 @@ SLA(Service Level Agreement)     ←─ 写进合同的对外承诺(更宽松)
 
 **Google 的 Four Golden Signals**:**Latency / Traffic / Errors / Saturation**——监控四件套。
 
-```promql
+```text
 # Prometheus 里的 SLI 例子
 
 # 成功率(过去 5 分钟)
@@ -139,7 +139,7 @@ SLO = 99.9% → 错误预算 = 0.1% × 30 天 = 43 分钟/月
 6 小时连续 3× 燃烧率       → 关注但不立刻 page
 ```
 
-```promql
+```text
 # Prometheus 燃烧率告警(SLO = 99.9%)
 ( 1 - (sum(rate(success[1h])) / sum(rate(total[1h]))) ) > 14 * 0.001
 and

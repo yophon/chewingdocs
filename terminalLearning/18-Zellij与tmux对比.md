@@ -289,7 +289,7 @@ Alt-f    →  toggle floating(不需要进模式,直接切)
 
 ### 3.4 第一份 ~/.config/zellij/config.kdl
 
-```kdl
+```text
 // ~/.config/zellij/config.kdl
 
 // 默认 shell
@@ -333,7 +333,7 @@ keybinds {
 
 KDL(Cuddly Document Language,2021)是一个声明式配置语言,**长得像 HTML / Lisp / Rust 的混血**:
 
-```kdl
+```text
 person name="Alice" age=30 {
   email "alice@example.com"
   email "alice@work.com"
@@ -350,7 +350,7 @@ person name="Alice" age=30 {
 
 把 nvim + cargo run + cargo watch test + Claude Code 跑在一个 layout 里:
 
-```kdl
+```text
 // ~/.config/zellij/layouts/dev.kdl
 
 layout {
@@ -398,7 +398,7 @@ zellij --layout ~/.config/zellij/layouts/dev.kdl
 
 ### 4.3 这份 layout 的每段在做什么
 
-```kdl
+```text
 layout {                              // 整个 layout 的根
   pane size=1 borderless=true {       // 第 1 个 pane:固定 1 行高,无边框
     plugin location="zellij:tab-bar"  // 装 tab-bar 这个内置插件
@@ -430,7 +430,7 @@ layout {                              // 整个 layout 的根
 
 ### 4.4 多个 tab 的 layout
 
-```kdl
+```text
 // 三个 tab:dev / logs / db
 layout {
   tab name="dev" focus=true {
@@ -470,7 +470,7 @@ B 的工作台和 A 一模一样
 
 ### 4.6 当前目录 / 环境变量
 
-```kdl
+```text
 layout {
   pane split_direction="vertical" {
     pane {

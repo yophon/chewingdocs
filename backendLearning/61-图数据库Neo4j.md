@@ -190,7 +190,7 @@ RETURN node.title, score;
 
 ## 七、Spring 集成:Spring Data Neo4j
 
-```gradle
+```text
 implementation 'org.springframework.boot:spring-boot-starter-data-neo4j'
 ```
 

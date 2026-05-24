@@ -346,7 +346,7 @@ Summary:
 
 **错的写法**:
 
-```promql
+```text
 # 错 1:存了 avg(直接打了一个 Gauge)
 http_request_duration_seconds_avg
 
@@ -359,7 +359,7 @@ rate(http_request_duration_seconds_sum[5m])
 
 **对的写法**:
 
-```promql
+```text
 # P99(整个服务的)
 histogram_quantile(0.99, 
   sum(rate(http_request_duration_seconds_bucket[5m])) by (le)

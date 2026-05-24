@@ -230,7 +230,7 @@ public class UserService {
 
 ## 八、热加载(开发体验)
 
-```gradle
+```text
 developmentOnly 'org.springframework.boot:spring-boot-devtools'
 ```
 

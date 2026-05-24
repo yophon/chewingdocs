@@ -143,7 +143,7 @@ docker build \
 
 Docker 构建上下文会被发送给 Docker daemon。没有 `.dockerignore` 时，`.git`、测试数据、临时文件、构建产物都可能进入上下文，拖慢构建并带来泄密风险。
 
-```gitignore
+```text
 .git
 .github
 .idea

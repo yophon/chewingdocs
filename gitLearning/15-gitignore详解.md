@@ -8,7 +8,7 @@
 
 ## 一、最基础的 .gitignore
 
-```gitignore
+```text
 # 注释,以 # 开头
 
 # 直接列文件名:匹配仓库里所有同名的(任何深度)
@@ -72,7 +72,7 @@ git 用 `gitignore` 风格的 glob:
 
 错误示范:
 
-```gitignore
+```text
 node_modules/
 !node_modules/some-package/important.txt
 ```
@@ -81,7 +81,7 @@ node_modules/
 
 正确做法:**目录别完全 ignore,只 ignore 里面的内容**:
 
-```gitignore
+```text
 node_modules/*
 !node_modules/some-package/
 !node_modules/some-package/important.txt
@@ -119,7 +119,7 @@ git 查 ignore 规则**从近到远**:
 git config --global core.excludesFile ~/.config/git/ignore
 ```
 
-```gitignore
+```text
 # ~/.config/git/ignore
 .DS_Store
 Thumbs.db
@@ -249,7 +249,7 @@ git push --force --tags
 
 ### 9.3 `.gitignore` 加上,养成习惯
 
-```gitignore
+```text
 .env
 .env.*
 !.env.example
@@ -280,7 +280,7 @@ git rm --cached -r dir/   # 让 git 忘记整个目录,工作区留着
 
 ## 十一、几个值得 ignore 的特殊文件
 
-```gitignore
+```text
 # 操作系统
 .DS_Store        # macOS
 Thumbs.db        # Windows
@@ -322,7 +322,7 @@ coverage/
 
 **`.vscode/` 的特殊处理**:有些团队希望 commit 部分 VS Code 配置(`extensions.json` 推荐插件、`settings.json` 编辑器规则),但不 commit 个人偏好。常见写法:
 
-```gitignore
+```text
 .vscode/*
 !.vscode/extensions.json
 !.vscode/settings.json

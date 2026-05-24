@@ -38,7 +38,7 @@ Request
 
 ## 三、最简配置(Spring Boot 3 / Security 6)
 
-```gradle
+```text
 implementation 'org.springframework.boot:spring-boot-starter-security'
 ```
 
@@ -120,7 +120,7 @@ public class MyUserDetailsService implements UserDetailsService {
 
 ### 1. 依赖
 
-```gradle
+```text
 implementation 'io.jsonwebtoken:jjwt-api:0.12.6'
 runtimeOnly    'io.jsonwebtoken:jjwt-impl:0.12.6'
 runtimeOnly    'io.jsonwebtoken:jjwt-jackson:0.12.6'

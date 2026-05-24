@@ -519,7 +519,7 @@ $ sudo vi /etc/turnserver.conf
 
 最小配置:
 
-```conf
+```text
 listening-port=3478
 tls-listening-port=5349
 

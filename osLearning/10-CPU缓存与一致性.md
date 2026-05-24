@@ -219,7 +219,7 @@ __atomic_fetch_add(&counter, 1, __ATOMIC_SEQ_CST);
 
 **底层用 LOCK 前缀**(x86)或 LL/SC 指令对(ARM):
 
-```assembly
+```text
 lock add [counter], 1     ; 锁总线 / cache line,保证原子
 ```
 

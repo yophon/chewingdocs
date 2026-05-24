@@ -397,7 +397,7 @@ run_onchange_xxx.sh   → 内容变化时重跑
 
 `dot_gitconfig.tmpl`:
 
-```gotemplate
+```text
 [user]
     name = {{ .name }}
     email = {{ .email }}
@@ -436,7 +436,7 @@ run_onchange_xxx.sh   → 内容变化时重跑
 
 `.chezmoi.toml.tmpl`:
 
-```gotemplate
+```text
 {{- $email := promptString "email" -}}
 {{- $name := promptString "name" -}}
 
@@ -449,7 +449,7 @@ run_onchange_xxx.sh   → 内容变化时重跑
 
 `dot_zshrc.tmpl`:
 
-```gotemplate
+```text
 # 通用配置
 export EDITOR=nvim
 export PAGER=less
@@ -511,7 +511,7 @@ gpg         →  类似 age
 
 `dot_envrc.tmpl`:
 
-```gotemplate
+```text
 export GITHUB_TOKEN={{ (onepasswordRead "op://Personal/GitHub Token/credential") | quote }}
 export ANTHROPIC_API_KEY={{ (onepasswordRead "op://Personal/Anthropic/api-key") | quote }}
 ```
@@ -545,7 +545,7 @@ chezmoi add --encrypt ~/.aws/credentials
 
 **`run_once_install-packages.sh.tmpl`** 是 chezmoi 处理"软件清单"的方式:
 
-```gotemplate
+```text
 #!/usr/bin/env bash
 # run_once_install-packages.sh.tmpl
 # 首次 apply 时跑,后续 hash 不变就不重跑
@@ -924,7 +924,7 @@ server-prod        Linux      *.prod.internal   生产 SSH     不要全套配�
 
 `dot_zshrc.tmpl`:
 
-```gotemplate
+```text
 # 通用
 export EDITOR=nvim
 alias g='git'
@@ -962,7 +962,7 @@ alias deploy='echo "no deploy at home"'
 
 模板里:
 
-```gotemplate
+```text
 {{- if eq .class "work" }}
 # 工作机配置
 {{- else if eq .class "personal" }}
@@ -974,7 +974,7 @@ alias deploy='echo "no deploy at home"'
 
 #### 6.3 用 OS 区分
 
-```gotemplate
+```text
 {{- if eq .chezmoi.os "darwin" }}
 # macOS
 eval "$(/opt/homebrew/bin/brew shellenv)"
@@ -989,7 +989,7 @@ eval "$(/opt/homebrew/bin/brew shellenv)"
 
 `.chezmoiignore`(也支持模板):
 
-```gotemplate
+```text
 {{- if eq .class "server" }}
 # 服务器不需要这些
 dot_config/nvim/
@@ -1015,7 +1015,7 @@ Brewfile.cask
 
 `dot_envrc.tmpl`:
 
-```gotemplate
+```text
 export GITHUB_TOKEN={{ (onepasswordRead "op://Personal/GitHub Token/credential") | quote }}
 export ANTHROPIC_API_KEY={{ (onepasswordRead "op://Personal/Anthropic API/credential") | quote }}
 export AWS_ACCESS_KEY_ID={{ (onepasswordRead "op://Work/AWS/access-key-id") | quote }}
@@ -1389,7 +1389,7 @@ chezmoi edit ~/.gitconfig
 
 每台机器首次 init 会问的问题:
 
-```gotemplate
+```text
 {{- $email := promptString "email" -}}
 {{- $class := promptStringOnce . "class" "class (work/home/server)" "work" -}}
 
