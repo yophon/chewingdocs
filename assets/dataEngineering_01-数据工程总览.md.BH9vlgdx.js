@@ -1,0 +1,117 @@
+import{c as s,Q as n,j as p,m as e}from"./chunks/framework.Bhbi9jCp.js";const g=JSON.parse('{"title":"数据工程总览:一家公司的数据从哪来到哪去","description":"","frontmatter":{},"headers":[],"relativePath":"dataEngineering/01-数据工程总览.md","filePath":"dataEngineering/01-数据工程总览.md","lastUpdated":1778496697000}'),t={name:"dataEngineering/01-数据工程总览.md"};function l(i,a,o,r,d,c){return n(),p("div",null,[...a[0]||(a[0]=[e(`<h1 id="数据工程总览-一家公司的数据从哪来到哪去" tabindex="-1">数据工程总览:一家公司的数据从哪来到哪去 <a class="header-anchor" href="#数据工程总览-一家公司的数据从哪来到哪去" aria-label="Permalink to &quot;数据工程总览:一家公司的数据从哪来到哪去&quot;">​</a></h1><p>写一行 <code>INSERT INTO orders ...</code>,看起来一行 SQL 的事——<strong>背后是这家公司的数据团队几十张表、十几条管道协作的开始</strong>:这条 insert 进了 MySQL,Binlog 被 Debezium 捕获写进 Kafka,Flink 消费后落到 Iceberg 的 ODS 层,Spark 凌晨跑 dbt model 把它清洗成 DWD,再聚合成 DWS,白天 BI 工具查 ADS 出报表,推荐系统拉 user_id 的最近行为做召回,RAG 系统把订单备注嵌入向量库供客服 Agent 检索——<strong>同一行数据,通过 7 种存储、4 种计算引擎、3 种调度系统才走完它的一生</strong>。这一篇先拉一张全景图,32 篇都在填它的细节。</p><blockquote><p>一句话先记住:<strong>数据工程不是「装一套大数据集群」</strong>——是回答一个工程问题:<strong>数据从生产到消费,中间这条管道怎么搭得既能扛住量、又能让分析师看懂、又能让模型用得上,且明天上游加一个字段不会把下游全炸</strong>。Hadoop 时代的答案已经过期,2025 年的答案是:<strong>对象存储 + 开放表格式 + 计算存储分离 + SQL 工程化</strong>。</p></blockquote><hr><h2 id="一、数据工程到底在解决什么问题" tabindex="-1">一、数据工程到底在解决什么问题 <a class="header-anchor" href="#一、数据工程到底在解决什么问题" aria-label="Permalink to &quot;一、数据工程到底在解决什么问题&quot;">​</a></h2><h3 id="_1-1-从一条数据的一生说起" tabindex="-1">1.1 从一条数据的一生说起 <a class="header-anchor" href="#_1-1-从一条数据的一生说起" aria-label="Permalink to &quot;1.1 从一条数据的一生说起&quot;">​</a></h3><p>设想一个电商公司,用户下了一个订单。这条「订单数据」会被多少个系统消费?</p><div class="language- vp-adaptive-theme"><button title="Copy Code" class="copy"></button><span class="lang"></span><pre class="shiki shiki-themes github-light github-dark vp-code" tabindex="0"><code><span class="line"><span>下单接口 (Java/Go 后端) </span></span>
+<span class="line"><span>    │</span></span>
+<span class="line"><span>    ├─→ MySQL orders 表        (业务库:订单详情查询、退款、客服)</span></span>
+<span class="line"><span>    ├─→ Redis 用户最近订单缓存   (App 个人中心首屏)</span></span>
+<span class="line"><span>    ├─→ 订单完成消息发 RocketMQ  (库存扣减、积分发放、券发放)</span></span>
+<span class="line"><span>    │</span></span>
+<span class="line"><span>    ↓  (此时业务流转结束,但数据生命才走 1/3)</span></span>
+<span class="line"><span>    </span></span>
+<span class="line"><span>    Binlog → Debezium → Kafka  (数据管道入口)</span></span>
+<span class="line"><span>        │</span></span>
+<span class="line"><span>        ├─→ Iceberg ODS 层 (原样保存的事实)</span></span>
+<span class="line"><span>        │       │</span></span>
+<span class="line"><span>        │       ├─→ DWD (清洗、字段标准化、维度补齐)</span></span>
+<span class="line"><span>        │       │       │</span></span>
+<span class="line"><span>        │       │       ├─→ DWS (按天/小时/品类聚合)</span></span>
+<span class="line"><span>        │       │       │       │</span></span>
+<span class="line"><span>        │       │       │       ├─→ ADS → BI 报表</span></span>
+<span class="line"><span>        │       │       │       │       (老板看 GMV、运营看品类)</span></span>
+<span class="line"><span>        │       │       │       │</span></span>
+<span class="line"><span>        │       │       │       └─→ 特征平台 → 推荐模型 / 风控模型</span></span>
+<span class="line"><span>        │       │       │</span></span>
+<span class="line"><span>        │       │       └─→ Flink 实时大屏</span></span>
+<span class="line"><span>        │       │               (双 11 GMV 秒级跳动)</span></span>
+<span class="line"><span>        │       │</span></span>
+<span class="line"><span>        │       └─→ 推荐召回离线索引 (近 30 天行为)</span></span>
+<span class="line"><span>        │</span></span>
+<span class="line"><span>        ├─→ 向量库 (订单备注 / 客服对话嵌入)</span></span>
+<span class="line"><span>        │       │</span></span>
+<span class="line"><span>        │       └─→ RAG → AI 客服</span></span>
+<span class="line"><span>        │</span></span>
+<span class="line"><span>        └─→ 数据湖归档 (合规审计 7 年保留)</span></span></code></pre></div><p>一条 insert,<strong>九个下游消费者,五种存储介质,三种延迟要求</strong>(秒级实时大屏 / 小时级 BI / 日级模型训练)。<strong>数据工程就是搭起这条管道、保证它跑得对、跑得动、出了问题能修的那群人</strong>。</p><h3 id="_1-2-数据工程师-vs-后端-vs-数仓-vs-分析师" tabindex="-1">1.2 数据工程师 vs 后端 vs 数仓 vs 分析师 <a class="header-anchor" href="#_1-2-数据工程师-vs-后端-vs-数仓-vs-分析师" aria-label="Permalink to &quot;1.2 数据工程师 vs 后端 vs 数仓 vs 分析师&quot;">​</a></h3><p>「数据」这个词太宽,不同角色处理的根本不是同一类问题:</p><table tabindex="0"><thead><tr><th>角色</th><th>在数据上做什么</th><th>时间尺度</th><th>工具栈</th><th>评价标准</th></tr></thead><tbody><tr><td><strong>后端工程师</strong></td><td>一行数据的 CRUD + 事务 + 一致性</td><td>毫秒</td><td>MySQL/PG, Redis, Kafka 业务消息</td><td>接口 P99、事务正确</td></tr><tr><td><strong>数据工程师</strong></td><td>把生产数据搬到分析侧 + 跑批/流转换</td><td>分钟到小时</td><td>Spark, Flink, Iceberg, Airflow, dbt</td><td>管道 SLA、数据新鲜度、成本</td></tr><tr><td><strong>数仓工程师</strong>(传统)</td><td>维度建模、ETL、报表口径</td><td>日</td><td>Hive, Informatica, BI 工具</td><td>口径一致、报表准</td></tr><tr><td><strong>分析师 / BI</strong></td><td>写 SQL 出报表、答业务问题</td><td>即席查询</td><td>SQL, dbt, Tableau/Looker/Superset</td><td>业务洞察</td></tr><tr><td><strong>算法 / ML 工程师</strong></td><td>特征 + 训练 + 上线推理</td><td>训练日级、推理毫秒</td><td>Spark ML, Pytorch, 特征平台</td><td>模型指标、上线 AUC</td></tr></tbody></table><p><strong>本系列服务的画像</strong>:写数据管道的应用工程师 / AI 工程师 / 后端工程师——你不是必须会自己运维 Spark 集群,但要看得懂上下游、能选型、能排错、能跟数据团队对话不抓瞎。</p><h3 id="_1-3-「大数据」三个字已经过期" tabindex="-1">1.3 「大数据」三个字已经过期 <a class="header-anchor" href="#_1-3-「大数据」三个字已经过期" aria-label="Permalink to &quot;1.3 「大数据」三个字已经过期&quot;">​</a></h3><p>2010 年前后那波 Hadoop 热的语境是:<strong>&quot;数据太大,单机搞不定&quot;</strong>。十五年过去,这句话的前半段还成立(数据更大了),后半段几乎不成立——</p><ul><li>单机 SSD 容量 4 TB 起、64 核 256 GB 内存的机器随手能租</li><li>DuckDB 在笔记本上扫 100 GB Parquet 不到 30 秒</li><li>ClickHouse 单机日处理千亿事件</li><li>S3 11 个 9 持久性,无脑往里扔</li></ul><p><strong>真正难的不是&quot;大&quot;,是&quot;管道复杂、口径多变、上下游耦合、合规要求多、AI 又来插一脚&quot;</strong>。所以这个系列的命题不是 &quot;How to handle big data&quot;,而是:</p><blockquote><p><strong>怎么搭一套既能让分析师写 SQL,又能让算法跑训练,还能让产品看实时大屏,且改一个字段不导致全公司报表跳水的「数据基础设施」</strong>。</p></blockquote><p>这就是「数据工程」——比「大数据」窄,比「ETL」宽,比「数据库管理」高一层。</p><hr><h2 id="二、现代数据栈一张图" tabindex="-1">二、现代数据栈一张图 <a class="header-anchor" href="#二、现代数据栈一张图" aria-label="Permalink to &quot;二、现代数据栈一张图&quot;">​</a></h2><p>把上面那条订单生命的全链路抽象,得到现代数据栈的标准分层。<strong>这张图你要能在白板上默写</strong>——本系列 32 篇都在填它的每一格:</p><div class="language- vp-adaptive-theme"><button title="Copy Code" class="copy"></button><span class="lang"></span><pre class="shiki shiki-themes github-light github-dark vp-code" tabindex="0"><code><span class="line"><span>┌──────────────────────────────────────────────────────────────────┐</span></span>
+<span class="line"><span>│                        消费层 (Consumption)                      │</span></span>
+<span class="line"><span>│   BI 报表    实时大屏    推荐召回    模型训练    RAG 检索        │</span></span>
+<span class="line"><span>│  Tableau     Flink+大屏  Faiss 索引  PyTorch    pgvector/Milvus  │</span></span>
+<span class="line"><span>└──────────────────────────────────────────────────────────────────┘</span></span>
+<span class="line"><span>              ▲              ▲              ▲              ▲</span></span>
+<span class="line"><span>              │              │              │              │</span></span>
+<span class="line"><span>┌──────────────────────────────────────────────────────────────────┐</span></span>
+<span class="line"><span>│                  服务层 / 应用层 (Serving)                       │</span></span>
+<span class="line"><span>│   语义层(dbt MetricFlow / Cube) + 在线特征(Redis/HBase)       │</span></span>
+<span class="line"><span>│   + 向量库(pgvector/Milvus) + Reverse ETL(Hightouch)         │</span></span>
+<span class="line"><span>└──────────────────────────────────────────────────────────────────┘</span></span>
+<span class="line"><span>              ▲                                            ▲</span></span>
+<span class="line"><span>              │                                            │</span></span>
+<span class="line"><span>┌──────────────────────────────────────────────────────────────────┐</span></span>
+<span class="line"><span>│                     建模层 (Modeling)                            │</span></span>
+<span class="line"><span>│   ADS (业务集市)  ◀──  DWS (汇总)  ◀──  DWD (明细)  ◀──  ODS    │</span></span>
+<span class="line"><span>│              dbt models + Spark SQL + Iceberg 物化               │</span></span>
+<span class="line"><span>└──────────────────────────────────────────────────────────────────┘</span></span>
+<span class="line"><span>              ▲                                            ▲</span></span>
+<span class="line"><span>              │                                            │</span></span>
+<span class="line"><span>┌──────────────────────────────────────────────────────────────────┐</span></span>
+<span class="line"><span>│                     计算层 (Compute)                             │</span></span>
+<span class="line"><span>│  批: Spark / Trino / DuckDB        流: Flink / Spark Streaming   │</span></span>
+<span class="line"><span>│  调度 / 编排: Airflow / Dagster / Prefect                        │</span></span>
+<span class="line"><span>└──────────────────────────────────────────────────────────────────┘</span></span>
+<span class="line"><span>              ▲                                            ▲</span></span>
+<span class="line"><span>              │                                            │</span></span>
+<span class="line"><span>┌──────────────────────────────────────────────────────────────────┐</span></span>
+<span class="line"><span>│                    存储层 (Storage)                              │</span></span>
+<span class="line"><span>│  对象存储 (S3/OSS/GCS)  +  开放表格式 (Iceberg/Delta/Hudi)       │</span></span>
+<span class="line"><span>│       +  Catalog (Glue/Nessie/Unity/Polaris)                     │</span></span>
+<span class="line"><span>│  消息中枢: Kafka / Pulsar / Redpanda  (兼数据管道事实源)         │</span></span>
+<span class="line"><span>└──────────────────────────────────────────────────────────────────┘</span></span>
+<span class="line"><span>              ▲                                            ▲</span></span>
+<span class="line"><span>              │                                            │</span></span>
+<span class="line"><span>┌──────────────────────────────────────────────────────────────────┐</span></span>
+<span class="line"><span>│                     接入层 (Ingestion)                           │</span></span>
+<span class="line"><span>│  CDC: Debezium / Flink CDC                                       │</span></span>
+<span class="line"><span>│  事件: Kafka / Pulsar  (埋点 / 业务消息)                         │</span></span>
+<span class="line"><span>│  批同步: DataX / Airbyte / Fivetran  (第三方 SaaS 数据)          │</span></span>
+<span class="line"><span>└──────────────────────────────────────────────────────────────────┘</span></span>
+<span class="line"><span>              ▲              ▲              ▲              ▲</span></span>
+<span class="line"><span>              │              │              │              │</span></span>
+<span class="line"><span>┌──────────────────────────────────────────────────────────────────┐</span></span>
+<span class="line"><span>│                       数据源 (Sources)                           │</span></span>
+<span class="line"><span>│  业务库  事件埋点  日志  第三方 API  IoT 传感器  外部数据集      │</span></span>
+<span class="line"><span>│  MySQL  GA/埋点 SDK  Loki  Stripe/Salesforce  MQTT  Kaggle       │</span></span>
+<span class="line"><span>└──────────────────────────────────────────────────────────────────┘</span></span></code></pre></div><p>横向看是分层,纵向看是数据流向——<strong>数据从下往上走,需求从上往下提</strong>。</p><h3 id="_2-1-每一层在解决什么" tabindex="-1">2.1 每一层在解决什么 <a class="header-anchor" href="#_2-1-每一层在解决什么" aria-label="Permalink to &quot;2.1 每一层在解决什么&quot;">​</a></h3><table tabindex="0"><thead><tr><th>层</th><th>解决的问题</th><th>典型选型(2025)</th></tr></thead><tbody><tr><td>接入</td><td>怎么把生产数据低延迟、不丢、可重放地搬过来</td><td>Debezium + Kafka,SaaS 用 Airbyte</td></tr><tr><td>存储</td><td>海量数据怎么存得便宜、可演进、引擎中立</td><td>S3 + Iceberg + REST Catalog</td></tr><tr><td>计算</td><td>怎么处理批 / 流 / 交互查询三种负载</td><td>Spark 批 + Flink 流 + Trino/DuckDB 交互</td></tr><tr><td>建模</td><td>怎么把原始数据变成业务能用的结构</td><td>dbt + Iceberg 物化、Kimball 维度建模</td></tr><tr><td>服务</td><td>怎么把建好的数据低延迟服务给应用</td><td>语义层 + 在线特征 + 向量库</td></tr><tr><td>消费</td><td>报表 / 模型 / 大屏 / RAG 怎么拿到数据</td><td>Looker、Pytorch、Flink+大屏、RAG</td></tr></tbody></table><p><strong>每一层都有死掉的上一代和正在崛起的下一代</strong>——本系列每一篇就是回答 <strong>&quot;上一代死在哪、下一代凭什么赢、什么时候过度设计&quot;</strong>。</p><h3 id="_2-2-这张图里没画的事-横切关注点" tabindex="-1">2.2 这张图里没画的事:横切关注点 <a class="header-anchor" href="#_2-2-这张图里没画的事-横切关注点" aria-label="Permalink to &quot;2.2 这张图里没画的事:横切关注点&quot;">​</a></h3><div class="language- vp-adaptive-theme"><button title="Copy Code" class="copy"></button><span class="lang"></span><pre class="shiki shiki-themes github-light github-dark vp-code" tabindex="0"><code><span class="line"><span>┌───────────────────────────────────────────┐</span></span>
+<span class="line"><span>│   数据治理 / 元数据 / 血缘 (DataHub)      │</span></span>
+<span class="line"><span>│   数据质量 / 可观测 (Monte Carlo / Soda)  │ 横切所有层</span></span>
+<span class="line"><span>│   权限 / 合规 / 审计 (Unity / Ranger)     │</span></span>
+<span class="line"><span>│   成本 / FinOps (按表计费、生命周期)      │</span></span>
+<span class="line"><span>└───────────────────────────────────────────┘</span></span></code></pre></div><p>这些不是某一层的事,是<strong>贯穿整个数据栈的工程纪律</strong>。31 篇会专讲数据质量与可观测,32 篇收口讲未来。</p><hr><h2 id="三、ods-→-dwd-→-dws-→-ads-数仓分层的心智" tabindex="-1">三、ODS → DWD → DWS → ADS:数仓分层的心智 <a class="header-anchor" href="#三、ods-→-dwd-→-dws-→-ads-数仓分层的心智" aria-label="Permalink to &quot;三、ODS → DWD → DWS → ADS:数仓分层的心智&quot;">​</a></h2><p>上面图里的「建模层」从 ODS 到 ADS 是中国数仓圈的事实标准命名(Inmon / Kimball 没这套词,但行话就这么用了)。它解决的根本问题是:<strong>不要让分析师每写一个查询都从原始表 join 一次</strong>。</p><div class="language- vp-adaptive-theme"><button title="Copy Code" class="copy"></button><span class="lang"></span><pre class="shiki shiki-themes github-light github-dark vp-code" tabindex="0"><code><span class="line"><span>ODS (Operational Data Store)</span></span>
+<span class="line"><span>   原样保存的事实,字段同源系统几乎一致</span></span>
+<span class="line"><span>   一张订单表对应业务库一张订单表</span></span>
+<span class="line"><span>   作用:快照、回溯、审计起点</span></span>
+<span class="line"><span>   </span></span>
+<span class="line"><span>       ↓  清洗、去重、字段标准化、补维度</span></span>
+<span class="line"><span>   </span></span>
+<span class="line"><span>DWD (Data Warehouse Detail)</span></span>
+<span class="line"><span>   维度补齐后的明细事实</span></span>
+<span class="line"><span>   订单 join 用户 / 商品 / 地理维度 → 一行带上下文</span></span>
+<span class="line"><span>   作用:分析的最小可用单位</span></span>
+<span class="line"><span>   </span></span>
+<span class="line"><span>       ↓  按时间 / 维度 聚合</span></span>
+<span class="line"><span>   </span></span>
+<span class="line"><span>DWS (Data Warehouse Summary)</span></span>
+<span class="line"><span>   按天 × 类目 × 城市的 GMV、UV、转化率…</span></span>
+<span class="line"><span>   作用:报表 / 看板的&quot;半成品&quot;</span></span>
+<span class="line"><span>   </span></span>
+<span class="line"><span>       ↓  按业务主题组装、加业务规则</span></span>
+<span class="line"><span>   </span></span>
+<span class="line"><span>ADS (Application Data Service / 集市)</span></span>
+<span class="line"><span>   &quot;运营增长看板&quot;、&quot;风控人群包&quot;、&quot;算法离线特征表&quot;</span></span>
+<span class="line"><span>   作用:直接喂给某一个业务/产品消费</span></span></code></pre></div><p>为什么要分这么多层?——<strong>复用、口径一致、变更隔离</strong>。一个字段改名,如果分析师都查 ODS,全公司报表跳水;如果分析师查 ADS,数据团队在 DWD/DWS 层做 backfill 就够。</p><p>「分多少层」是工程判断:小公司 ODS+DWD+ADS 三层就够,大公司可能加 DIM(纯维度)、TMP(临时层)、APP(应用)。<strong>别教条,但别不分层</strong>。</p><hr><h2 id="四、本系列-32-篇的阅读路径" tabindex="-1">四、本系列 32 篇的阅读路径 <a class="header-anchor" href="#四、本系列-32-篇的阅读路径" aria-label="Permalink to &quot;四、本系列 32 篇的阅读路径&quot;">​</a></h2><p>32 篇按层组织,<strong>也可以按你目前的痛点跳读</strong>。下面是几条推荐路径:</p><h3 id="路径-a-零起点理解整个数据栈-最少-11-篇" tabindex="-1">路径 A:零起点理解整个数据栈(最少 11 篇) <a class="header-anchor" href="#路径-a-零起点理解整个数据栈-最少-11-篇" aria-label="Permalink to &quot;路径 A:零起点理解整个数据栈(最少 11 篇)&quot;">​</a></h3><div class="language- vp-adaptive-theme"><button title="Copy Code" class="copy"></button><span class="lang"></span><pre class="shiki shiki-themes github-light github-dark vp-code" tabindex="0"><code><span class="line"><span>01 (你正在读)  →  02 OLTP vs OLAP   →  03 ETL vs ELT</span></span>
+<span class="line"><span>                    ↓</span></span>
+<span class="line"><span>06 列存原理  →  07 对象存储  →  08 Iceberg</span></span>
+<span class="line"><span>                    ↓</span></span>
+<span class="line"><span>12 Spark 心智  →  18 流处理心智</span></span>
+<span class="line"><span>                    ↓</span></span>
+<span class="line"><span>23 Airflow  →  25 dbt</span></span></code></pre></div><p>读完这 11 篇,你能在白板上把现代数据栈的每一层讲明白,知道选型方向。</p><h3 id="路径-b-已经在用-spark-hive-想升级到-lakehouse-8-篇" tabindex="-1">路径 B:已经在用 Spark/Hive,想升级到 Lakehouse(8 篇) <a class="header-anchor" href="#路径-b-已经在用-spark-hive-想升级到-lakehouse-8-篇" aria-label="Permalink to &quot;路径 B:已经在用 Spark/Hive,想升级到 Lakehouse(8 篇)&quot;">​</a></h3><div class="language- vp-adaptive-theme"><button title="Copy Code" class="copy"></button><span class="lang"></span><pre class="shiki shiki-themes github-light github-dark vp-code" tabindex="0"><code><span class="line"><span>06 列存  →  07 对象存储  →  08 Iceberg  →  10 Lakehouse</span></span>
+<span class="line"><span>12-15 Spark 心智 / 执行 / 调优 / AQE  →  25 dbt</span></span></code></pre></div><p>读完知道为什么 Hive on HDFS 该退场,Iceberg + Spark + dbt 怎么接上。</p><h3 id="路径-c-做实时业务-要补流处理-7-篇" tabindex="-1">路径 C:做实时业务,要补流处理(7 篇) <a class="header-anchor" href="#路径-c-做实时业务-要补流处理-7-篇" aria-label="Permalink to &quot;路径 C:做实时业务,要补流处理(7 篇)&quot;">​</a></h3><div class="language- vp-adaptive-theme"><button title="Copy Code" class="copy"></button><span class="lang"></span><pre class="shiki shiki-themes github-light github-dark vp-code" tabindex="0"><code><span class="line"><span>17 Kafka 在数据管道里的位置  →  18 流处理心智  →  19 Watermark</span></span>
+<span class="line"><span>20 Flink 架构  →  21 Flink 状态  →  22 流批一体  →  27 CDC 实战</span></span></code></pre></div><p>读完能从 Kafka 接 Binlog,用 Flink 做实时聚合,落 Iceberg 让批侧也能用。</p><h3 id="路径-d-ai-工程师做-rag-特征-5-篇" tabindex="-1">路径 D:AI 工程师做 RAG / 特征(5 篇) <a class="header-anchor" href="#路径-d-ai-工程师做-rag-特征-5-篇" aria-label="Permalink to &quot;路径 D:AI 工程师做 RAG / 特征(5 篇)&quot;">​</a></h3><div class="language- vp-adaptive-theme"><button title="Copy Code" class="copy"></button><span class="lang"></span><pre class="shiki shiki-themes github-light github-dark vp-code" tabindex="0"><code><span class="line"><span>28 向量库  →  29 RAG 数据管道  →  30 特征平台</span></span>
+<span class="line"><span>                ↓</span></span>
+<span class="line"><span>31 数据质量(没 SLA 的 RAG = 黑魔法)  →  32 未来</span></span></code></pre></div><p>读完知道一个生产级 RAG 的&quot;数据一侧&quot;怎么搭,特征平台和 RAG 管道的共通工程问题在哪。</p><h3 id="路径-e-面试-分布式数据系统理论-交叉读" tabindex="-1">路径 E:面试 / 分布式数据系统理论(交叉读) <a class="header-anchor" href="#路径-e-面试-分布式数据系统理论-交叉读" aria-label="Permalink to &quot;路径 E:面试 / 分布式数据系统理论(交叉读)&quot;">​</a></h3><p>数据工程的理论底座大量在 <strong>systemDesign + distributedLearning</strong>——本系列只讲应用工程图景。如果你要打底,先把那两个系列的「一致性、共识、复制、CAP」补上,再回来读 19/20/21 关于 Watermark / Checkpoint / Exactly-once 的工程化。</p><hr><h2 id="五、几个反直觉的事" tabindex="-1">五、几个反直觉的事 <a class="header-anchor" href="#五、几个反直觉的事" aria-label="Permalink to &quot;五、几个反直觉的事&quot;">​</a></h2><p>刚入行做数据工程,最容易踩的几个认知误区:</p><h3 id="_5-1-大数据-不一定大" tabindex="-1">5.1 &quot;大数据&quot;不一定大 <a class="header-anchor" href="#_5-1-大数据-不一定大" aria-label="Permalink to &quot;5.1 &quot;大数据&quot;不一定大&quot;">​</a></h3><p>公司日活 100 万,每用户每天 200 条事件,<strong>全量也就 2 亿行 / 天</strong>——按 100 字节算 20 GB,Snappy 压缩后 5 GB。<strong>单机 DuckDB 一分钟扫完</strong>。</p><p>很多小公司一上来就上 Spark + EMR + Airflow,运维成本 &gt; 数据价值。<strong>先用 PostgreSQL + dbt 起步,撑不住再上</strong>——这是 2025 业界共识(连 Databricks 自己都在 demo「Lakehouse Lite」)。</p><h3 id="_5-2-实时-越快越好" tabindex="-1">5.2 实时 ≠ 越快越好 <a class="header-anchor" href="#_5-2-实时-越快越好" aria-label="Permalink to &quot;5.2 实时 ≠ 越快越好&quot;">​</a></h3><p>&quot;老板要实时看大屏&quot; — 大部分情况下,5 分钟 vs 5 秒,业务决策没区别,运维成本差 10 倍。</p><p><strong>实时管道的真实代价</strong>:Flink 集群常驻、Checkpoint 落 S3 有成本、状态膨胀要 TTL、回算复杂、调试痛苦。<strong>只在确实需要实时(风控、抢购、监控告警、客服 Agent)时才上</strong>,其他用 5 分钟微批就行。</p><h3 id="_5-3-数据湖-数据仓库-2-0" tabindex="-1">5.3 数据湖 ≠ 数据仓库 2.0 <a class="header-anchor" href="#_5-3-数据湖-数据仓库-2-0" aria-label="Permalink to &quot;5.3 数据湖 ≠ 数据仓库 2.0&quot;">​</a></h3><p>数据湖(S3 + Parquet 文件堆)和数据仓库(Snowflake / BigQuery)是<strong>两种不同的工程取舍</strong>——湖便宜开放但散乱,仓贵但有 schema 和性能。</p><p><strong>Lakehouse 是融合</strong>(10 篇):用 Iceberg/Delta 给湖加 ACID + Schema,让它有仓的纪律。<strong>但融合不是免费的</strong>,Catalog、compaction、expire 都是新加的运维负担。小公司 Snowflake 一把梭,大公司湖仓一体——选型按规模和团队能力来。</p><h3 id="_5-4-工具不是答案" tabindex="-1">5.4 工具不是答案 <a class="header-anchor" href="#_5-4-工具不是答案" aria-label="Permalink to &quot;5.4 工具不是答案&quot;">​</a></h3><div class="language- vp-adaptive-theme"><button title="Copy Code" class="copy"></button><span class="lang"></span><pre class="shiki shiki-themes github-light github-dark vp-code" tabindex="0"><code><span class="line"><span>没纪律的团队 + Iceberg + dbt + Dagster + Flink = 仍然垃圾</span></span>
+<span class="line"><span>有纪律的团队 + PostgreSQL + 一堆 SQL 脚本 + cron = 也能跑很好</span></span></code></pre></div><p><strong>数据工程 70% 是组织 + 流程 + 命名规范 + Code Review,30% 才是工具</strong>。本系列教你工具,但工具救不了治理稀烂的团队。</p><hr><h2 id="六、立场声明" tabindex="-1">六、立场声明 <a class="header-anchor" href="#六、立场声明" aria-label="Permalink to &quot;六、立场声明&quot;">​</a></h2><p>这个系列的写作立场,把它说在前面以免你期望落空:</p><p><strong>写</strong>:</p><ul><li>工程视角:能落地、能排错、能选型、能给团队建议</li><li>心智模型 + 一张图 + 最小可跑代码 + 替代方案</li><li>「上一代死在哪」+「这一代的甜与苦」+「下一代往哪走」</li></ul><p><strong>不写</strong>:</p><ul><li>Hadoop / MapReduce / HDFS NameNode 高可用细节(那个时代过去了)</li><li>罗列工具命令大全(官方文档在那儿)</li><li>「这是面试常考」(读者来这里是为了真懂)</li><li>「Spark vs Flink 谁更牛」口水战(只讲各自擅长场景)</li><li>不画图就讲 Shuffle / Watermark / 列存(画不出来 = 没讲清)</li></ul><p><strong>这个系列不是 Hadoop 教程</strong>,<strong>不是 DDIA 重写</strong>(那本是经典,但 8 年前写的,Iceberg / dbt / 向量库都没讲),<strong>不是某厂内训</strong>——是「2025 年一个会写代码的工程师,要在数据这一层达到能搭、能修、能选型、能跟数据团队对话不抓瞎」的最短路径。</p><hr><h2 id="七、看完这一篇-你应该能" tabindex="-1">七、看完这一篇,你应该能 <a class="header-anchor" href="#七、看完这一篇-你应该能" aria-label="Permalink to &quot;七、看完这一篇,你应该能&quot;">​</a></h2><ul><li>在白板上画出第二节那张「现代数据栈一张图」,讲清楚每一层在解决什么问题</li><li>区分数据工程师和后端 / 数仓 / 分析师 / 算法的职责边界</li><li>解释为什么「大数据」三个字已经过期,以及「数据工程」的真问题是什么</li><li>看到「ODS / DWD / DWS / ADS」这套词不抓瞎,知道为什么要分层</li><li>选一条阅读路径继续往下读</li></ul><p>下一篇:<strong>02 OLTP vs OLAP</strong> — 同一个东西叫&quot;数据库&quot;,一个能扛百万 TPS 但聚合千万行就崩,另一个聚合百亿行毫秒级但单行更新慢得一塌糊涂。<strong>为什么不能合并、HTAP 是不是答案</strong>。</p>`,80)])])}const u=s(t,[["render",l]]);export{g as __pageData,u as default};
