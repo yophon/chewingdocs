@@ -2,7 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { defineConfig, type DefaultTheme } from "vitepress";
 
-const docsRoot = path.resolve(__dirname, "..");
+const docsRoot = path.resolve(__dirname, "../..");
 
 const series: Array<{ text: string; dir: string }> = [
   { text: "AI 学习", dir: "aiLearning" },
@@ -91,6 +91,8 @@ function escapeVueMustaches(html: string) {
 export default defineConfig({
   title: "chewingdocs",
   description: "按主题整理的技术学习文档库",
+  srcDir: "..",
+  srcExclude: ["docs/**", "site/**", "node_modules/**"],
   base: "/chewingdocs/",
   cleanUrls: true,
   ignoreDeadLinks: true,
