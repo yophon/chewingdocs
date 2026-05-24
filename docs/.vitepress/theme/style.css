@@ -38,3 +38,74 @@
   display: table;
   width: 100%;
 }
+
+.SeriesNav {
+  margin-bottom: 24px;
+  padding: 12px;
+  border: 1px solid var(--vp-c-divider);
+  border-radius: 8px;
+  background: var(--vp-c-bg-soft);
+}
+
+.SeriesNav-title {
+  margin-bottom: 10px;
+  color: var(--vp-c-text-2);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.SeriesNav-controls {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: center;
+}
+
+.SeriesNav-button,
+.SeriesNav-select {
+  height: 36px;
+  border: 1px solid var(--vp-c-divider);
+  border-radius: 6px;
+  background: var(--vp-c-bg);
+  color: var(--vp-c-text-1);
+  font-size: 14px;
+}
+
+.SeriesNav-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 12px;
+  white-space: nowrap;
+}
+
+.SeriesNav-button:hover {
+  border-color: var(--vp-c-brand-1);
+  color: var(--vp-c-brand-1);
+}
+
+.SeriesNav-button.is-disabled {
+  color: var(--vp-c-text-3);
+  cursor: not-allowed;
+}
+
+.SeriesNav-button.is-disabled:hover {
+  border-color: var(--vp-c-divider);
+  color: var(--vp-c-text-3);
+}
+
+.SeriesNav-select {
+  width: 100%;
+  padding: 0 10px;
+}
+
+@media (max-width: 640px) {
+  .SeriesNav-controls {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .SeriesNav-select {
+    grid-column: 1 / -1;
+    grid-row: 1;
+  }
+}
