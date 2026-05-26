@@ -1,411 +1,335 @@
-# 03-Kotlin 2.0 语言心智
+# Kotlin 2.0 语言心智
 
-> 一句话导读:Kotlin 不是"更现代的 Java",而是 JVM 上"类型安全 + 函数式 + Java 互操作"三件套的妥协答案。K2 编译器让 smart cast 更聪明、推断更宽容,但也让一些老姿势悄悄退出 —— 把"哪些是工程语法、哪些是过度炫技"分清楚,后面 27 篇代码才不会读到一半冒出陌生语法。
-
-第 02 篇把构建栈钉死了,从这一篇开始有大量 Kotlin 代码。在写第一行业务逻辑前,先把 Kotlin 在 Android 上真正高频使用的语法子集与设计取舍讲透。Kotlin 是一门语法非常大的语言 —— 协程、序列、DSL、operator overload、reified 泛型、`infix`、`tailrec`、`inline` 一堆能力 —— 但实际在 Android 项目里,90% 的代码反复用到的只有十几个特性。把那十几个用得地道,比把全语法学一遍更重要。
-
-熟悉 Java / Swift / TypeScript 的工程师对 Kotlin 上手通常很快,但常见三种"用力过猛":第一种把 `let` / `run` / `with` / `apply` / `also` 五个 scope function 全用上,代码读起来像绕口令;第二种把 `?.` `!!` 当成"看心情"决定,空安全形同虚设;第三种学了 `value class` / `inline class` 就到处包一层,反而引入互操作问题。这一篇把这些坑提前讲清,Kotlin 2.0 + K2 的几个新行为也一起钉死。
-
-## 1. 机制定位
-
-Kotlin 的设计目标在官方文档里有一句话:**"a modern, statically typed language for the JVM that interoperates seamlessly with Java"**。这三个限定词决定了 Kotlin 与 Swift / TypeScript / Scala 之间的所有差异:
-
-- "for the JVM" —— Kotlin 编译产物是标准 JVM 字节码,与 Java 在二进制层互通。`Note.kt` 里写的 `data class` 编译出来就是 Java 里能看见 `Note` 类带 `getName()` / `equals()` / `hashCode()`,反过来 Java 写的库 Kotlin 也能 `import` 直接用。这条约束让 Kotlin 不可能引入"和 JVM 类型模型冲突"的特性 —— 比如不可能有真正的 union types,只能用 sealed class / interface 模拟。
-- "interoperates seamlessly with Java" —— Kotlin 必须在与 Java 互调时表现自然。所以 Kotlin 有 `@JvmStatic` / `@JvmOverloads` / `@JvmField` 一组互操作注解,让 Kotlin 的语法糖在 Java 看来仍是熟悉的形态。
-- "statically typed" —— 编译期类型检查,空安全是类型系统的一等公民。`String` 和 `String?` 是两个不同的类型,任何 `String?` 上的 `.length` 调用必须经过 `?.` 或 `!!`。
-
-NotedX 是纯 Kotlin 项目,但**Android 平台 SDK 是 Java 写的**,所以即便不写一行 Java,Kotlin 也要时时处理"Java API 返回值可能为 null 但没标 `@Nullable`"这种边界。这是后面"`String!` 平台类型"问题的根源,第 5 节会展开。
-
-Kotlin 1.x 到 2.0 的关键变化是 **K2 编译器默认启用**。K2 是 JetBrains 从 2020 年开始重写的下一代 Kotlin 编译器,2024-05 随 Kotlin 2.0 进入 stable 默认。对工程师而言,K2 带来三个直接感知:
-
-- **编译速度提升**。同等代码量下,Clean Build 通常快 1.5-2 倍,Incremental Build 快 1.2-1.5 倍。Compose 项目尤其受益。
-- **更宽容的 smart cast**。Kotlin 1.x 里 smart cast 有大量"逃逸限制"(例如开放属性、跨 lambda、跨成员函数都不能 smart cast),K2 把分析扩展到更多场景,2.0 里很多"以前必须显式 `as`"的代码现在能自动转。
-- **统一前端**。K2 一次性把 Kotlin 的 IDE 静态分析、编译器、文档生成等共用一套前端,长期维护成本下降,意味着 Kotlin 后续语言特性能更快迭代。
-
-K2 默认启用也意味着**一部分 Kotlin 1.x 时代被默认接受的写法会在 K2 下编译失败**,典型是某些类型推断更严格、某些隐式 `Nothing` 推断不再发生、某些 lambda 隐式 receiver 解析变了。第 5 节"踩坑"专门讲这一类迁移问题。
-
-这一篇要建的核心心智是:**Kotlin 是一门"为高频代码模式提供语法糖"的语言**,每一个语法特性都对应一类工程问题。学语法不能只学"语法长什么样",要学"什么场景才该用这个语法",否则会让代码变成炫技。后面 4 节按"类型系统 / 表达性 / 互操作 / Kotlin 2.0 新行为"四个方向,把高频特性逐个钉死。
-
-## 2. Kotlin 心智
-
-把 Kotlin 2.0 在 Android 项目里高频使用的能力按四类整理:
-
-**类型系统**(让 Bug 在编译期被发现):
-
-- **空安全**:`?` 标记可空,`!!` 强解包(必然抛 `NullPointerException`),`?.` 安全调用,`?:` Elvis,`?.let { ... }` "非空则执行"。空安全是 Kotlin 类型系统的核心承诺,**项目里出现 `!!` 都应该被视为可疑代码**,review 时优先排查。
-- **`sealed interface` / `sealed class`**:封闭类型,所有子类型必须在同文件(K2 起放宽到同一编译单元的同一包内)。配合 `when` 表达式可以做"穷尽性检查"—— 编译器知道你 cover 了所有情况,新增子类型时所有 `when` 都会被警告。**这是替代 enum 表达"既要枚举性又要带数据"的标准做法**,第 3 节会用 sealed interface 表达 NotedX 的事件类型。
-- **`data class`**:Kotlin 编译器自动生成 `equals` / `hashCode` / `toString` / `componentN` / `copy`。任何"只是装数据的类"都应该是 data class。注意 `data class` 的 `equals` 是基于主构造函数声明的所有属性,**类成员里 `val` 但不在主构造的属性不参与 equals**,这一点跟 Java record 一致,但和很多人直觉不同。
-- **`value class`**:JVM Project Valhalla 还没落地,Kotlin 通过编译期内联模拟"零成本包装"。典型场景是给"业务上有意义但物理上就是 String / Long"的类型一个名字,例如 `NoteId(value: Long)`,运行时仍然是 Long,但编译期严格区分。`value class` 必须只有一个主构造参数,且不能继承(只能实现接口)。
-
-**表达性**(让"高频代码模式"语法上更短):
-
-- **Scope Functions**:`let` / `run` / `with` / `apply` / `also` 五个函数,作用都是"对一个对象做一段操作"。它们的差异在于"以谁作 receiver"和"返回什么":
-
-| 函数 | receiver | 返回值 | 典型用途 |
-| --- | --- | --- | --- |
-| `let` | `it` | lambda 结果 | 链式中转换或非空处理:`s?.let { upload(it) }` |
-| `run` | `this` | lambda 结果 | 在某个对象上下文里做一组计算并取结果 |
-| `with` | `this` | lambda 结果 | 同 `run` 但写法 `with(obj) { ... }`,适合外部对象 |
-| `apply` | `this` | 对象本身 | 配置链式:`Builder().apply { setX(1); setY(2) }` |
-| `also` | `it` | 对象本身 | "顺便干件事再传出去":`save(note).also { Log.i(TAG, "saved $it") }` |
-
-记住一条原则:**返回值是 lambda 结果 vs 对象本身**,以及 **receiver 是 `it` 还是 `this`**。两两组合形成五种(`with` 与 `run` 实际是同一类的两种写法)。
-- **Extension**(扩展函数 / 扩展属性):给已有类型加方法而不修改源码。`fun String.toNoteTitle(): String = trim().take(40)` 之后,任何 String 都能 `"raw".toNoteTitle()`。扩展函数在字节码里其实是静态函数,第一个参数是 receiver,**不参与多态**(如果 `Base` 和 `Derived` 都定义同名扩展,以静态类型决定调谁)。扩展属性必须显式定义 getter / setter,**不能持有 backing field**。
-- **Delegation**:三种委托模式:`by lazy` 把属性求值推迟到首次访问;`Delegates.observable` / `Delegates.vetoable` 把"属性变化"包成回调;`by SomeInterface` 把整个接口实现委托给另一对象,免去 boilerplate。
-
-**互操作**(与 Java 边界):
-
-- `@JvmStatic`:让 companion object 里的方法在 Java 看是真正的 `static`,而不是 `Foo.Companion.bar()`。
-- `@JvmOverloads`:让带默认参数的 Kotlin 函数在 Java 看时生成多个重载,而不是必须传所有参数。
-- `@JvmField`:让 Kotlin 属性在 Java 看是 public field 而不是 `getX()` / `setX()`。
-- `@file:JvmName("NoteUtils")`:让顶层函数所在的 `Note.kt` 在 Java 看是 `NoteUtils` 类而不是默认的 `NoteKt`。
-
-NotedX 是纯 Kotlin 项目,这四个注解短期内不会用到。但任何写给 Java 库使用、或被 Android 系统反射调用的代码(例如自定义 Notification Action、`BroadcastReceiver`、`ContentProvider`),都要考虑这些注解。
-
-**Kotlin 2.0 / K2 新行为**:
-
-- Smart cast 范围扩大,跨 `&&` / `||` 短路、跨 try-catch、跨局部 lambda 都能 smart cast。
-- 类型推断更激进,某些场景需要显式给类型避免推成 `Any`。
-- 旧的 `kotlinx.coroutines.ObsoleteCoroutinesApi` 一组 API 在 K2 下彻底移除,某些过时第三方库可能直接编译失败。
-
-第 5 节"踩坑"会展开 K2 迁移期的具体案例。
-
-## 3. 工程实现
-
-把上面这些能力落到 NotedX 一段真实代码 —— 笔记领域模型。这段代码会被后续第 11-15 篇反复扩展,这里给出第一版,演示 Kotlin 2.0 在工程上的地道用法。
-
-**`app/src/main/java/com/notedx/data/note/Note.kt`** —— 笔记模型与事件:
-
-```kotlin
-package com.notedx.data.note
-
-import kotlinx.serialization.Serializable
-import java.util.UUID
-
-/**
- * NotedX 笔记 ID。
- *
- * value class 让它在运行时与 String 同形(零包装),
- * 但编译期与普通 String 严格区分,防止把"用户输入"误传成"笔记 ID"。
- */
-@JvmInline
-@Serializable
-value class NoteId(val raw: String) {
-    init {
-        require(raw.isNotBlank()) { "NoteId must not be blank" }
-    }
-
-    companion object {
-        fun new(): NoteId = NoteId(UUID.randomUUID().toString())
-    }
-}
-
-/**
- * 笔记主结构。
- *
- * data class 自动生成 equals/hashCode/copy/toString。
- * 注意:equals 是基于主构造参数,extras 这种成员字段不参与。
- */
-@Serializable
-data class Note(
-    val id: NoteId,
-    val title: String,
-    val body: String,
-    val createdAt: Long,
-    val updatedAt: Long,
-    val tags: List<String> = emptyList(),
-) {
-    val isEmpty: Boolean
-        get() = title.isBlank() && body.isBlank()
-
-    /** 派生属性:不存,按需算 */
-    val excerpt: String
-        get() = body.lineSequence().firstOrNull { it.isNotBlank() }?.take(80).orEmpty()
-}
-
-/**
- * 笔记领域事件。
- *
- * sealed interface 让 when 在所有情况都 cover 后,编译器不需要 else,
- * 后续新增子类型时所有 when 表达式都会被警告补全。
- */
-sealed interface NoteEvent {
-    val noteId: NoteId
-
-    data class Created(override val noteId: NoteId, val title: String) : NoteEvent
-    data class Updated(override val noteId: NoteId, val changedFields: Set<String>) : NoteEvent
-    data class Deleted(override val noteId: NoteId, val softDelete: Boolean) : NoteEvent
-
-    /** "归档"动作没有额外字段,但用 data class 也合理(将来可能加字段) */
-    data class Archived(override val noteId: NoteId) : NoteEvent
-}
-```
-
-这一段已经覆盖了类型系统三件套:`NoteId` 是 value class(`@JvmInline` 注解在 Kotlin 2.0 是必须的,否则会被当成普通 inline class 给警告),`Note` 是 data class,`NoteEvent` 是 sealed interface。`@Serializable` 来自 kotlinx.serialization,第 15 篇会展开。
-
-`require(raw.isNotBlank())` 这类前置条件检查是 Kotlin 标准库提供的工具,失败抛 `IllegalArgumentException`。还有 `check { ... }`(失败抛 `IllegalStateException`)与 `error("msg")`(直接抛 `IllegalStateException`)。**不要写裸 `throw Exception("...")`**,用这三个把意图表达清楚。
-
-**`app/src/main/java/com/notedx/data/note/NoteFactory.kt`** —— 演示 scope functions、extension、delegation:
-
-```kotlin
-package com.notedx.data.note
-
-import kotlin.properties.Delegates
-import kotlin.time.Duration.Companion.milliseconds
-
-/** 顶层扩展函数:给 String 加业务相关方法。仅在本模块导出。 */
-fun String.toNoteTitle(maxLen: Int = 40): String =
-    trim().take(maxLen).ifBlank { "Untitled" }
-
-/** 扩展属性:不持有 backing field,只是 getter */
-val String.firstParagraph: String
-    get() = lineSequence().firstOrNull { it.isNotBlank() }.orEmpty()
-
-/**
- * 笔记构造工厂。演示:
- * - apply 用于配置链
- * - run 用于"做一段计算并取结果"
- * - let 用于"非空处理"
- * - also 用于"顺带打点"
- */
-class NoteFactory(private val now: () -> Long = System::currentTimeMillis) {
-
-    /** 创建空笔记 */
-    fun draft(): Note = Note(
-        id = NoteId.new(),
-        title = "",
-        body = "",
-        createdAt = now(),
-        updatedAt = now(),
-    ).also { check(it.isEmpty) { "draft must be empty" } }
-
-    /** 创建带初始内容的笔记,演示 apply / data class copy 协作 */
-    fun fromInput(rawTitle: String, rawBody: String): Note = draft().run {
-        // run 的 receiver 是 draft 返回的 Note,可直接访问其属性
-        copy(
-            title = rawTitle.toNoteTitle(),
-            body = rawBody.trim(),
-            updatedAt = now(),
-        )
-    }
-
-    /**
-     * 更新笔记,演示 let 与 apply 的差异。
-     * 想"链式取值":let。想"链式配置":apply。
-     */
-    fun touch(note: Note, newBody: String? = null): Note = note.copy(
-        body = newBody?.let { it.trim() } ?: note.body,
-        updatedAt = now(),
-    )
-}
-
-/**
- * 演示 delegation。
- *
- * by lazy:首次访问才求值,默认是 SYNCHRONIZED(线程安全),
- * 在已知单线程访问(典型如 Compose 里的 @Composable 局部)可以用 NONE 省锁。
- *
- * Delegates.observable:属性被赋值时回调,适合"属性变化要通知"。
- */
-class NoteDraftHolder {
-    val expensiveTemplate: String by lazy {
-        // 这段只会跑一次,且线程安全
-        loadHugeTemplate()
-    }
-
-    var currentDraft: Note? by Delegates.observable(initialValue = null) { _, old, new ->
-        if (old?.id != new?.id) {
-            // 笔记切换时回调,可以挂上 dirty check / autosave 逻辑
-            println("draft switched: ${old?.id} -> ${new?.id}")
-        }
-    }
-
-    private fun loadHugeTemplate(): String = """
-        # Untitled
-
-        - [ ] todo
-
-    """.trimIndent()
-}
-```
-
-逐点解读:
-
-- **`by lazy`** 默认 `LazyThreadSafetyMode.SYNCHRONIZED`,首次访问做双重检查锁;Compose 局部状态等已知单线程的场景,可用 `by lazy(LazyThreadSafetyMode.NONE)` 省掉锁开销。
-- **`Delegates.observable`** 的回调签名是 `(property, oldValue, newValue) -> Unit`,适合做"字段变化触发副作用",但**不要用它做复杂业务**,会让数据流不可追踪。Compose 项目里更推荐 `StateFlow` 暴露不可变只读流,第 11 篇展开。
-- **`run` vs `let`**:`run` 把 receiver 当 `this`(可省略),`let` 把 receiver 当 `it`(显式);两者都返回 lambda 结果。规则:**链式调用时 `let` 让代码更容易读**(`xxx?.let { ... }`),**对象内部操作时 `run` 让代码更简洁**(`xxx.run { copy(...) }`)。
-- **`apply` 用于配置**:典型场景是 Builder 模式,`StringBuilder().apply { append("a"); append("b") }.toString()`。NotedX 业务代码里其实很少 apply,因为 data class + copy 比 apply 更地道;apply 多见于和 Java Builder API 互操作。
-
-**`app/src/main/java/com/notedx/data/note/NoteValidator.kt`** —— 演示空安全、smart cast 与 when 穷尽:
-
-```kotlin
-package com.notedx.data.note
-
-/**
- * 校验结果,sealed interface + data class。
- * when (result) 时编译器要求 cover 所有子类型。
- */
-sealed interface ValidationResult {
-    data object Valid : ValidationResult
-    data class Invalid(val reasons: List<String>) : ValidationResult
-}
-
-class NoteValidator {
-
-    /** 入参 Note?,显式处理 null 与各种空场景 */
-    fun validate(note: Note?): ValidationResult {
-        if (note == null) return ValidationResult.Invalid(listOf("note is null"))
-        // K2 smart cast:经过 null 检查后,note 在此分支被自动 cast 为非空 Note
-        // 在 1.x 里也支持,但若 note 是 var 且来自其他线程则失效;K2 把分析做得更宽
-        val reasons = buildList {
-            if (note.title.isBlank()) add("title is blank")
-            if (note.body.length > MAX_BODY_LEN) add("body exceeds $MAX_BODY_LEN chars")
-            if (note.tags.size > MAX_TAGS) add("tags exceed $MAX_TAGS")
-        }
-        return if (reasons.isEmpty()) ValidationResult.Valid else ValidationResult.Invalid(reasons)
-    }
-
-    /** 演示 when 表达式的穷尽性 */
-    fun describe(result: ValidationResult): String = when (result) {
-        ValidationResult.Valid -> "ok"
-        is ValidationResult.Invalid -> "invalid: ${result.reasons.joinToString()}"
-        // 若 ValidationResult 加新子类型,这里会被编译警告
-    }
-
-    companion object {
-        const val MAX_BODY_LEN = 10_000
-        const val MAX_TAGS = 10
-    }
-}
-```
-
-`data object Valid` 是 Kotlin 1.9 引入的 "data object":会自动生成 `toString` / `equals` / `hashCode`(等价于 `object Valid { override fun toString() = "Valid" }` + 单例 equals),日志友好。**sealed 层级里所有"无字段"分支都应该用 data object 而不是 `data class XxxImpl()`**。
-
-## 4. 调参与验收
-
-Kotlin 没有"调参",但有"用得地道与否"。给出 NotedX 整套项目的几条工程公约,这些会贯穿后续每一段代码:
-
-**空安全**:
-
-- 业务代码里出现 `!!` 一律走 PR review。除非"调用 Android 平台 API 且文档明确保证非空但签名是 `String!` 平台类型",否则用 `requireNotNull(x) { "msg" }` 或 `checkNotNull(x) { "msg" }` 代替,能多一个错误信息。
-- `?.let { ... }` 是"非空则执行",优先级最高。`?: someDefault` 是"为空则用默认值"。两者组合 `x?.foo() ?: defaultFoo()` 是 Kotlin 里非常常见的"安全调用 + 默认值"组合,值得形成肌肉记忆。
-- 平台类型(Java 返回的 `String!`)在 Kotlin 里**默认按非空处理**,但运行时可能是 null。所有调 Android Framework / 第三方 Java SDK 的代码,都要主动给类型显式 `?` 或 `!!`,**让意图在代码上明示**。
-
-**scope functions 选用**:
-
-| 想表达 | 选用 |
-| --- | --- |
-| "如果非空,做点事并返回结果" | `x?.let { ... }` |
-| "对这个对象做配置,返回它自己" | `x.apply { ... }` |
-| "顺手做件事但保持值不变" | `x.also { ... }` |
-| "在这个对象上下文里做计算,返回结果" | `x.run { ... }` 或 `with(x) { ... }` |
-
-`with` 和 `run` 在功能上几乎等价,`with(x) { ... }` 把对象写在前面、lambda 在后,适合 receiver 是外部对象;`x.run { ... }` 链式更自然。**同一项目里建议两者只用一种**,本系列统一用 `run`,`with` 不出现。
-
-**data class vs class vs object**:
-
-- 只装数据 → `data class`;
-- 装数据但有少量行为(非纯函数) → 普通 `class`;
-- 全局唯一无状态 → `object`;
-- sealed 层级里无字段子类 → `data object`。
-
-**value class 何时用**:
-
-- 一种类型在业务上"有意义",但物理上就是 String / Long / Int 的包装(典型:`NoteId`、`UserId`、`Email`)。
-- 不要为"只在一个文件里用"的临时类型加 value class —— 收益不抵阅读成本。
-- 不要为可空类型加 value class —— `value class Nullable<T>(val v: T?)` 这种写法没意义。
-
-**Extension 何时用**:
-
-- 给"自己不能修改"的类型加方法(Android 框架类、第三方库类)。
-- 把"看起来像方法,但本质是顶层函数"的代码组织得更顺手。
-- **不要把 extension 用作"工具类大杂烩"**(`StringUtils`、`DateUtils`)—— 那会让代码搜索 `xxx.foo()` 时找不到定义点。Extension 应该贴近它服务的类型组织,而不是按"功能类型"集中。
-
-**K2 编译速度验证**:
-
-```bash
-./gradlew clean :app:compileDebugKotlin --info | grep -E "Total Kotlin|kotlin-compiler-embeddable"
-```
-
-K2 启用(Kotlin 2.0+ 默认)与 K1(`-Xuse-k2=false`)在中等项目能看到 30-100% 速度差。Compose 项目尤其明显。
-
-**验收清单**:
-
-- 把第 3 节三段代码加入 `app/src/main/java/com/notedx/data/note/`,`./gradlew :app:compileDebugKotlin` 跑通。
-- 在 `NoteValidator.describe` 的 when 表达式里删掉 `is ValidationResult.Invalid -> ...` 这一支,编译应当报错 "when expression must be exhaustive" —— 验证 sealed 的穷尽性检查。
-- 在 `NoteValidator.validate` 里把 `note == null` 那一行删掉,编译应当报错 "Only safe (?.) or non-null asserted (!!.) calls are allowed on a nullable receiver of type Note?"。
-- 把 `NoteId.new()` 的返回值直接传给一个声明为 `String` 参数的函数,编译应当报错(value class 编译期严格区分)。
-- 用 Java 写一段调用 `NoteId.new()` 的代码(只为做实验),应当看到 `NoteId.Companion.new()` 而不是 `NoteId.new()` —— 这是 companion object 在 Java 视角的形态,加 `@JvmStatic` 会变成 `NoteId.new()`。
-
-## 5. 踩坑
-
-**坑 1:`!!` 滥用**。`!!` 表达的是"我向编译器保证此处非空",失败抛 `NullPointerException`。**真实工程里几乎没有"必然非空"的场景**,除了 Android 框架某些已知签名(`requireActivity()`、`requireContext()`)。常见误用:`view!!.findViewById(...)`、`intent!!.getStringExtra("key")`,这两者实际可能为 null,应当用 `?.let { ... }` 或 `requireNotNull`。
-
-**坑 2:`lateinit var` 用在不该用的地方**。`lateinit` 是为 "已知会赋值但不能在构造时赋值" 的场景准备的(典型:`@Inject` 注入、`@BeforeEach` 测试初始化)。**不要用 `lateinit` 替代 nullable**。错误用法:`lateinit var currentUser: User`,初始化前访问抛 `UninitializedPropertyAccessException`,这与 `!!` 没有本质区别,只是把空安全失败的位置藏得更深。
-
-**坑 3:K2 smart cast 在某些场景仍失效**。虽然 K2 把 smart cast 做得更宽,但**开放属性(`open val`)与跨进程边界的属性仍然不能 smart cast**,因为编译器无法证明"两次访问之间不会被改"。典型反例:
-
-```kotlin
-class Holder { open var name: String? = null }
-
-val h: Holder = ...
-if (h.name != null) {
-    // K2 仍然不能 smart cast h.name 为非空,因为 name 是 open var,
-    // 子类可能 override 成"每次读返回不同值"。
-    h.name.length  // 编译错
-}
-```
-
-修法:`val local = h.name ?: return; local.length`,先拷到 local val 再用。这是 K2 仍然保留的合理限制。
-
-**坑 4:`data class` equals 不参与非主构造字段**。`data class Foo(val a: Int) { var b: Int = 0 }` 里,`Foo(1).also { it.b = 100 }` 与 `Foo(1).also { it.b = 200 }` `equals` 是 `true`,因为 `b` 不在主构造里。这导致 `Set<Foo>` 去重时 `b` 不同的实例会被合并。修法:**所有应当参与相等性的字段都放主构造**,需要 mutable 状态的对象不要用 data class。
-
-**坑 5:`sealed class` vs `sealed interface` 误选**。Kotlin 1.5 引入 `sealed interface`,2.0 已稳定。差异:`sealed interface` 可以多继承(一个子类可以同时实现多个 sealed interface),`sealed class` 只能单继承;`sealed class` 可以有主构造,`sealed interface` 不能。**默认用 `sealed interface`**,只有明确需要"所有子类共享某些 state / 行为"才用 `sealed class`。NotedX 里 `NoteEvent` / `ValidationResult` 都是 sealed interface。
-
-**坑 6:scope functions 写成嵌套绕口令**。
-
-```kotlin
-// 反例:连嵌四层 scope function,可读性归零
-note.let { it.copy(title = "x") }.also { Log.i("a", it.toString()) }
-    .apply { check(title.isNotBlank()) }.run { upload(this) }
-```
-
-修法:把链拆开成 local val,每个 val 做一件事。**当你发现自己在写超过两层 scope function 嵌套时,先停下来重构**。
-
-**坑 7:扩展函数与成员函数同名,以静态类型决定调谁**。
-
-```kotlin
-class A {
-    fun foo() = "member"
-}
-fun A.foo() = "extension"
-
-val a: A = A()
-a.foo()  // "member" —— 成员函数优先
-```
-
-如果 `A` 定义在第三方库,你写了 `fun A.foo()` 想"覆盖",一旦库升级在 A 里加了真的 `foo()` 成员,你的代码会**默默切换到成员实现**,行为变了但没报错。**不要给第三方类型加同名扩展**。
-
-**坑 8:`@JvmStatic` 与 `@JvmOverloads` 在 Android 反射场景必须**。`BroadcastReceiver` / `ContentProvider` / `Service` 这些被系统反射创建的类,如果用 Kotlin 写,companion object 的方法在 Java / 反射看来是 `Companion.foo()`,不是 `Foo.foo()`。Notification Action 用反射拿构造函数时,带默认参数的 Kotlin 构造在 Java 看来只有一个全参版本。这两种场景都要显式加 `@JvmStatic` / `@JvmOverloads`。NotedX 第 18 篇会专门展开 BroadcastReceiver 与互操作。
-
-**坑 9:`by lazy` 在 Compose 里用错**。Compose 函数会被重组,`@Composable fun X() { val cached by lazy { compute() } }` 这种写法在每次重组都会创建一个新的 lazy,根本起不到缓存作用。Compose 里"按需缓存"应该用 `remember { compute() }`,第 07 篇展开。**`by lazy` 只在普通类成员上使用**,Compose 内一律 `remember`。
-
-**坑 10:K2 类型推断更激进,某些 `var x = mutableListOf()` 推成 `MutableList<Any>`**。Kotlin 1.x 里编译器有时会根据后续使用推断回具体类型,K2 把这条边界收紧。修法:写明确类型 `val x: MutableList<Note> = mutableListOf()` 或 `val x = mutableListOf<Note>()`。**所有 mutable 集合都建议显式标元素类型**。
-
-**坑 11:`Sequence` 与 `List` 混用导致性能误判**。`list.map { ... }.filter { ... }.first()` 会先建中间 list 再 filter。改 `list.asSequence().map { ... }.filter { ... }.first()` 是惰性求值,只算到 first 满足。**对长 list 且只取少量元素时用 sequence**;短 list 直接 list,sequence 反而有额外开销。
-
-**坑 12:K2 + `kotlinx.coroutines` 旧 API 编译失败**。一些 2020 年之前的 `@ExperimentalCoroutinesApi` 或 `@ObsoleteCoroutinesApi` 标记的 API 在 Kotlin 2.0 + 协程 1.9.x 已经被删除。表现:升级 Kotlin 后某些第三方库直接编译失败。修法:升级依赖到与 Kotlin 2.0 兼容的最新版,无法升级的第三方库要么换、要么 fork patch。
+> 这篇不是 Kotlin 教程。它的目标是:**让一个写过 Java / Go / TS 的人,知道 Kotlin 在 Android 后续 19 篇里反复用的那十几个特性各自为什么存在**。教程网上一大把,本篇只讲心智。
 
 ---
 
-下一篇 `04-协程与结构化并发.md`,把这一篇里只提了一句的协程展开,讲清 `CoroutineScope` / `Job` / `Dispatchers` / `viewModelScope` 与结构化并发的边界,以及为什么 NotedX 全栈协程不再有 RxJava 与 AsyncTask。
+## 一、Kotlin 不是"更优雅的 Java"
 
-## 手动验证
+很多人对 Kotlin 的印象是"Java + 语法糖"。这是误导。Kotlin 的设计目标是**修两个 Java 顽疾**:`NullPointerException`、**样板代码**。这两件事在 Android 上格外致命:
 
-- [ ] 把第 3 节三段 Kotlin 代码加入 NotedX 项目,`./gradlew :app:compileDebugKotlin` 跑通,无 warning。
-- [ ] 写一个 main 函数(或 unit test)实例化 `NoteFactory`、`NoteValidator`,创建一篇 Note、跑一次 validate,断言 `Valid` 与 `Invalid` 路径都符合预期。
-- [ ] 故意把 `NoteValidator.describe` 的 when 改成不完整(去掉 `is ValidationResult.Invalid` 分支),编译应当报错。
-- [ ] 故意把 `NoteId(value: String)` 传给一个声明为 `String` 的函数,编译应当报错。
-- [ ] 写一段反例:连嵌三层 scope function,然后重构成 local val 链,体会可读性差异。
-- [ ] 在 Android Studio 里开 Tools → Kotlin → Show Kotlin Bytecode → Decompile,看 `Note.kt` 反编译成 Java 后的形态,确认 `data class` 生成了 `getId()` / `equals()` / `hashCode()` / `copy()` / `componentN()` 等方法,`value class` 在 Java 看是 `NoteId__JvmInline` 风格的 inline 包装。
-- [ ] 阅读 Kotlin 官方文档 *What's new in Kotlin 2.0.0* 中 K2 小节一次,知道 K2 在 smart cast、null analysis、type inference 三方面的边界变化。
+- Android API 一半返回值可能为 `null`(`findViewById` 找不到、`getIntent().getExtras()` 没有)
+- Android 数据类要写一堆 `getter` / `setter` / `equals` / `hashCode` / `toString`
+
+Kotlin 在语言层就把这两件事解决了。**所有"Kotlin 比 Java 好"的论点最后都能还原成这两条**。
+
+| 维度 | Java | Kotlin |
+| --- | --- | --- |
+| 空安全 | 无,只能靠 `@Nullable` 注解(运行期可能挂) | **类型系统强制**:`String` 不可空,`String?` 可空 |
+| 数据类 | `class Note { ... }` 手写 50 行 | `data class Note(val title: String)` 一行 |
+| 函数类型 | `Function<T, R>` 接口 | **一等公民**:`val f: (Int) -> String = { it.toString() }` |
+| 扩展函数 | 无 | **`fun String.removeWhitespace() = ...`** 给老类型加方法 |
+| 单例 | `Holder.INSTANCE` 模式 | `object Foo { ... }` |
+| 协程 | 无,靠 RxJava / `CompletableFuture` | **`suspend fun`** 一等公民 |
+
+---
+
+## 二、空安全:`?` 与 `!!` 的契约
+
+Kotlin 类型系统区分 `T` 与 `T?`:`T` 永远不可能是 `null`,`T?` 可能是 `null`。所有访问 `T?` 的代码必须显式处理可空情况,否则编译不过。
+
+```kotlin
+val name: String = "Alice"       // 不可空
+val nickname: String? = null     // 可空
+
+name.length          // OK
+nickname.length      // 编译报错:nickname 可能为 null
+
+nickname?.length     // OK,返回 Int?,nickname 是 null 就整体是 null
+nickname?.length ?: 0    // Elvis 运算符:为 null 时取 0
+nickname!!.length    // 强制非空,若实际是 null 直接抛 NPE
+```
+
+**`!!` 是 Kotlin 里最危险的运算符**——它是"我向编译器保证这一定不空,出问题我负责"。`!!` 在工程代码里出现就是 code smell:它意味着你**应当**用类型系统表达不可空,但用 `!!` 偷懒了。后续 19 篇里出现的 `!!` 数量,在十次以内。
+
+**Platform Type**(Java 来的类型显示为 `String!`):Kotlin 不知道 Java 返回的 `String` 是否可空,所以给它一个"平台类型",你怎么用都不报错——这是空安全的破口,凡是从 Java API 拿到的值,**进入 Kotlin 边界时立即标注可空性**:
+
+```kotlin
+val intent = getIntent()                    // Intent! (platform type)
+val data: String? = intent?.getStringExtra("k")   // 显式标 String?,边界收口
+```
+
+---
+
+## 三、`val` vs `var`:默认不可变
+
+Kotlin 用 `val` 声明"只读引用"(类似 Java `final`),用 `var` 声明可变引用。默认全部用 `val`,只有真正要改才用 `var`。
+
+```kotlin
+val notes: List<Note> = emptyList()    // notes 引用不可变;但 notes 本身是 List<T>,只读视图
+var count: Int = 0                     // 可改
+```
+
+注意 `val` 只管"引用不变",不管"对象内容不变"。`val notes: MutableList<Note>` 仍然可以 `notes.add(...)`。所以要"既不能换引用、又不能改内容",需要**不可变集合**:`List<T>` / `Set<T>` / `Map<K, V>` 是接口,默认实现不可变;`MutableList<T>` 才是可变集合。
+
+**Compose 强烈偏好不可变状态**——`UiState` 用 `data class` + `val` + `List<T>` 是默认形态,这一点 10 篇展开。
+
+---
+
+## 四、`data class`:Android 数据层的主力
+
+```kotlin
+data class Note(
+    val id: Long,
+    val title: String,
+    val content: String,
+    val createdAt: Long,
+)
+```
+
+`data class` 自动生成 `equals` / `hashCode` / `toString` / `copy` / `componentN`。其中 **`copy` 是最重要的**——它实现"基于现有对象创建一个修改了某些字段的新对象",这是状态管理的核心模式:
+
+```kotlin
+val edited = note.copy(title = "New Title")    // 其他字段不变,只改 title
+```
+
+UDF(单向数据流)的核心操作就是 `state.copy(...)`——状态不可变,每次更新都生成新对象。10 篇展开。
+
+**`data class` 不是免费的**:它生成的所有方法都在字节码里,大量 `data class` 会让 APK 体积稍涨。但工程上几乎从不为这个优化——直接用就是。
+
+---
+
+## 五、`object` / `companion object`:静态的两种形式
+
+Kotlin 没有 `static` 关键字,要表达"静态成员"有两种方式:
+
+```kotlin
+// 1. 独立单例
+object Logger {
+    fun log(msg: String) { ... }
+}
+Logger.log("hi")    // 直接访问
+
+// 2. 类的"伴生对象"——Kotlin 里"类的静态成员"实际上是这个伴生 object
+class MainActivity : ComponentActivity() {
+    companion object {
+        private const val TAG = "MainActivity"
+        fun newIntent(ctx: Context) = Intent(ctx, MainActivity::class.java)
+    }
+}
+MainActivity.newIntent(ctx)
+```
+
+`object` 单例的初始化是**懒的、线程安全的**——首次访问时才创建,JVM 类加载机制保证只有一份实例。这是 Kotlin 替代 Java 单例双重检查锁的标准答案。
+
+---
+
+## 六、扩展函数:给"别人的类"加方法
+
+```kotlin
+fun String.removeAllWhitespace(): String = filter { !it.isWhitespace() }
+
+"hello world".removeAllWhitespace()    // "helloworld"
+```
+
+扩展函数的本质是**静态函数 + 语法糖**:编译后变成 `StringExtensionsKt.removeAllWhitespace(s)`,**不修改 `String` 类本身**。所以扩展函数:
+
+- 不能访问类的 `private` 成员
+- 是静态分派的,不是多态的(`Animal::sound` 这种重写不会因扩展函数受影响)
+- 可以加在 `null` 接收者上:`fun String?.orEmpty()`
+
+Android 里到处是扩展函数:`Context.getSystemService<NotificationManager>()`、`Modifier.padding(8.dp)`、`Flow.collectAsStateWithLifecycle()`——它们让外部库能在不修改原类的前提下提供链式 API。
+
+---
+
+## 七、Lambda 与高阶函数:函数是值
+
+Kotlin 函数是一等公民。函数类型写作 `(参数) -> 返回值`:
+
+```kotlin
+val isEven: (Int) -> Boolean = { it % 2 == 0 }
+val process: (Int) -> Int = { x -> x * 2 }
+listOf(1, 2, 3).filter(isEven)         // [2]
+listOf(1, 2, 3).map(process)           // [2, 4, 6]
+```
+
+几个习惯:
+
+- **`it` 是单参数 lambda 的隐含名字**——只有一个参数时不必写 `x ->`。
+- **尾随 lambda(trailing lambda)**——如果函数最后一个参数是函数,可以把 lambda 提到括号外:
+  ```kotlin
+  list.filter { it > 0 }       // 等价于 list.filter({ it > 0 })
+  ```
+- **SAM 转换**——Java 单方法接口可以直接传 lambda:
+  ```kotlin
+  button.setOnClickListener { handleClick() }    // OnClickListener 是 SAM
+  ```
+
+Compose 里整个 UI 树都是 lambda 嵌 lambda——`Column { Row { Text(...) } }` 这种写法,本质是高阶函数把子 Composable 当作尾随 lambda 接收。05/06 篇展开。
+
+---
+
+## 八、`by lazy` 与 `lateinit`:延迟初始化
+
+```kotlin
+val expensiveThing: Engine by lazy {
+    // 首次访问 expensiveThing 时才执行,且只执行一次
+    Engine.create()
+}
+
+lateinit var prefs: SharedPreferences   // 声明时不初始化,后续某处赋值
+override fun onCreate() {
+    prefs = getSharedPreferences("x", MODE_PRIVATE)
+}
+```
+
+两者的区别:
+
+- `by lazy` 是 `val`,初始化在 lambda 里,**只跑一次,线程安全**。
+- `lateinit` 是 `var`,只能用于非空引用类型(不能是 Int / Long 等原始类型),**必须**在使用前手动赋值,访问未初始化的 `lateinit` 会抛 `UninitializedPropertyAccessException`。
+
+什么时候用哪个?
+
+- 需要构造时就有依赖、但构造昂贵 → `by lazy`
+- 在 `onCreate` / DI 注入之后才能拿到值 → `lateinit`
+
+Android 里 Hilt 注入字段就用 `lateinit`:`@Inject lateinit var repo: NoteRepository`——因为 Hilt 在 Activity 创建后才注入。13 篇展开。
+
+---
+
+## 九、`sealed`:有限继承的代数数据类型
+
+```kotlin
+sealed interface UiState {
+    data object Loading : UiState
+    data class Success(val notes: List<Note>) : UiState
+    data class Error(val message: String) : UiState
+}
+```
+
+`sealed` 的关键约束:**子类必须和父类在同一文件 / 同一模块**。这意味着编译器知道**全部子类有哪些**,`when` 表达式可以做穷尽性检查:
+
+```kotlin
+val state: UiState = ...
+val message = when (state) {
+    UiState.Loading -> "Loading"
+    is UiState.Success -> "${state.notes.size} notes"
+    is UiState.Error -> state.message
+    // 不写 else 也可以,编译器知道穷尽
+}
+```
+
+这就是函数式语言里的**代数数据类型(ADT)**。UDF 的 `UiState` 几乎都用 sealed 表达。比 Java 的"标志位 + 多个字段"模型清晰一个数量级。
+
+`sealed class` 与 `sealed interface` 的差别:`interface` 子类可以同时继承多个 sealed 接口(组合);`class` 单继承。**默认偏好 `sealed interface`**,扩展性更好。
+
+---
+
+## 十、`inline` / `reified`:在编译期消解泛型擦除
+
+JVM 泛型在运行时**擦除**——`List<String>` 和 `List<Int>` 在运行时都是 `List`,你拿不到 `T` 的 `Class`。Kotlin 用 `inline` + `reified` 在编译期把泛型实参展开:
+
+```kotlin
+inline fun <reified T : Activity> Context.start() {
+    startActivity(Intent(this, T::class.java))
+}
+
+ctx.start<DetailActivity>()    // 编译后变成 startActivity(Intent(ctx, DetailActivity.class))
+```
+
+`inline` 把函数体在调用点展开,`reified` 让你能在函数体里写 `T::class`。**Android 里到处是这种 API**:`viewModel<HomeViewModel>()`、`getSystemService<NotificationManager>()`、`navController.navigate<Route.Detail>()`(Navigation Compose 2.8+ 类型安全路由)。
+
+不要用 `inline` 来"性能优化普通函数"——它的真正用途是 `reified` + 高阶函数(避免 lambda 装箱)。
+
+---
+
+## 十一、作用域函数:`let` / `apply` / `run` / `also` / `with`
+
+```kotlin
+note?.let { saveToDb(it) }              // 非空时执行,it 是 note
+Note(title = "x").apply { id = 1 }      // 构造后初始化,返回原对象
+val s = StringBuilder().run { ... }     // 在对象上执行 block,返回 block 结果
+list.also { Log.d("notes", it.toString()) } // 副作用打日志,返回原对象
+with(canvas) { drawX(); drawY() }       // 在对象上做多次调用
+```
+
+记忆心法(只记这两条):
+
+- **返回原对象**:`apply`(this 是接收者)、`also`(it 是接收者)
+- **返回 block 结果**:`let`(it 是接收者)、`run`(this 是接收者)、`with`(this 是接收者)
+
+**别滥用**——一连串 `let { apply { also { run { ... } } } }` 是 Kotlin 代码里最常见的可读性灾难。99% 场景只用两个:`?.let { ... }`(非空时执行)、`.apply { ... }`(构造后初始化)。
+
+---
+
+## 十二、`suspend`:协程的语法标记
+
+```kotlin
+suspend fun fetchNotes(): List<Note> {
+    val resp = api.getNotes()       // 这一行会挂起当前协程,等响应
+    return resp.body() ?: emptyList()
+}
+```
+
+**`suspend` 是关键字,但本质是语法糖**——编译器把 `suspend fun` 变成"带回调的状态机"。从调用者视角,`suspend fun` 看起来同步,实际异步;从语言视角,`suspend fun` **只能在协程或另一个 `suspend fun` 里调用**。
+
+```kotlin
+fun onClick() {
+    fetchNotes()    // 编译报错:不能在非 suspend 上下文调 suspend
+}
+
+fun onClick() {
+    viewModelScope.launch {       // 启动一个协程
+        val notes = fetchNotes()  // OK,在协程里
+        _state.value = state.value.copy(notes = notes)
+    }
+}
+```
+
+04 篇会把协程的心智彻底展开。
+
+---
+
+## 十三、K2 编译器带来了什么
+
+Kotlin 2.0 默认启用 K2 编译器,工程上能感知的变化:
+
+1. **编译速度显著提升**——K2 内部重写了类型推断,大型项目增量编译能快 30-50%。
+2. **smart cast 范围扩大**——以下代码 K1 报错、K2 通过:
+   ```kotlin
+   sealed interface Result { ... }
+   fun handle(r: Result) {
+       if (r is Result.Success) {
+           // K2 在分支闭包里也保留 smart cast,K1 不行
+           lambda { use(r.data) }    // r 被 smart-cast 到 Result.Success
+       }
+   }
+   ```
+3. **更严格的类型检查**——一些 K1 放行的隐式转换、平台类型边界在 K2 下报错。升级到 2.0 时常见的迁移工作就是把这些显式标好。
+
+**Kotlin 2.0.20+ 的 Compose Compiler 内嵌**——上一篇讲过,不再追单独版本号,这是 K2 最大的工程红利之一。
+
+---
+
+## 十四、Android 里 Kotlin 与 Java 互操作
+
+Android 项目里你大概率不会写 Java,但**会引用 Java 库**(老 SDK / 第三方)。Kotlin ↔ Java 互操作是双向、零开销的,但有四类边界:
+
+1. **空安全失效**——Java `String` 在 Kotlin 看是 `String!`,平台类型。**进入 Kotlin 边界立即收口**:`val s: String? = javaObj.maybeGetName()`。
+2. **属性 vs `getX/setX`**——Java 的 `getName()` / `setName(...)` 在 Kotlin 里可以写作 `obj.name = "x"`(属性形式);反过来 Kotlin 的 `val name` 在 Java 里看是 `getName()`。
+3. **默认参数**——Kotlin `fun f(x: Int = 0)` 在 Java 里看不到默认参数,需加 `@JvmOverloads` 生成重载。
+4. **lambda vs SAM**——Kotlin lambda 默认不实现 SAM 接口,要传给 Java API 时偶尔需要显式 `OnClickListener { ... }`。
+
+NotedX 全 Kotlin 写,Java 互操作仅在第 13 / 22 篇短暂出现(三方 SDK 边界)。
+
+---
+
+## 十五、踩坑
+
+**坑 1:把 `!!` 当成"反正没问题"**。每一个 `!!` 都是一颗潜在 NPE 炸弹,而且 Crashlytics 报错时只会告诉你"NullPointerException at line X",根本没有上下文。**用 `?:` / `let` / `requireNotNull(..., "为什么不该为空")` 替代**——后者至少崩的时候有解释。
+
+**坑 2:把 `data class` 用来做 entity 兼业务模型**。`data class` 自动生成 `equals` / `hashCode` 是基于**所有 `val` / `var` 字段**的——如果你给 Room entity 加一个 `@Ignore` 的运行时字段,`equals` 会把这个字段也算进去,导致缓存判等行为出错。**数据库 entity 与 UI 模型分开**,通过 mapper 转换,13 篇展开。
+
+**坑 3:`object` 用作"全局状态容器"**。`object` 是单例,生命周期与进程相同。**不要在 `object` 里放可变状态**——它没有 scope、不会随 ViewModel 销毁,你写的就是一个全局变量。
+
+**坑 4:扩展函数定义在错的地方**。扩展函数应当定义在**最能描述其归属的文件**里,而不是塞进 `Utils.kt`。`fun Modifier.shimmer(): Modifier` 应放在 `ui/Modifier+Shimmer.kt`,不是 `ui/Utils.kt`。
+
+**坑 5:把 Java 的 NPE 风险带过来**。`val name = intent.getStringExtra("name")` 返回 `String?`,但很多人写 `val name = intent.getStringExtra("name")!!`——一旦上游漏传就直接崩。**Android API 的 `String?` 几乎都应该 `?.` / Elvis 处理,而不是 `!!`**。
+
+**坑 6:协程里裸用 `runBlocking`**。`runBlocking` 把协程**变回**阻塞调用,在主线程跑会 ANR。`runBlocking` 只应在测试或 `main` 函数顶层出现,不应进入 Android 业务代码。04 篇展开。
+
+**坑 7:`lateinit` 滥用**。`lateinit` 的本质是"我承诺会先赋值再访问"。如果这个承诺难以保证(比如某些路径下 `onCreate` 不会被调到),应该改用 `by lazy` 或可空 `var`。
+
+---
+
+下一篇 `04-协程与 Flow:结构化并发.md`,把 Android 上唯一的并发答案讲清楚:`suspend fun` 的本质、`CoroutineScope` 的生命周期绑定、`Dispatchers` 主线程 / IO / Default、取消传播、`Flow` 冷流与 `StateFlow` / `SharedFlow` 热流的区别。这是后面 18 篇异步代码的统一底座。
