@@ -25,8 +25,9 @@
 | Go | [Go学习路线总览](/goLearning/01-Go学习路线总览) |
 | Rust | [Rust学习路线总览](/rustLearning/01-Rust学习路线总览) |
 | Flutter | [状态管理总览](/flutterLearning/01-状态管理总览) |
-| Android 原生开发 | [现代Android心智总览](/androidNativeLearning/01-现代Android心智总览) |
-| iOS 原生开发 | [Swift6-iOS18-SwiftUI心智总览](/iosNativeLearning/01-Swift6-iOS18-SwiftUI心智总览) |
+| Android 原生开发 | [现代Android的一棵树](/androidNativeLearning/01-现代Android的一棵树) |
+| Android 平台基础 | [Android的世界观](/androidPlatformLearning/01-Android的世界观) |
+| iOS 原生开发 | [原生iOS的一张地图](/iosNativeLearning/01-原生iOS的一张地图) |
 | Godot 游戏开发 | [Godot4.6与2D独立游戏心智总览](/godotLearning/01-Godot4.6与2D独立游戏心智总览) |
 | 解释器 | [解释器总览](/interpreterLearning/01-解释器总览) |
 | 安全 | [安全总览](/securityLearning/01-安全总览) |

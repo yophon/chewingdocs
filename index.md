@@ -59,8 +59,9 @@ features:
 | Go | [goLearning](/goLearning/01-Go学习路线总览) |
 | Rust | [rustLearning](/rustLearning/01-Rust学习路线总览) |
 | Flutter | [flutterLearning](/flutterLearning/01-状态管理总览) |
-| Android 原生开发 | [androidNativeLearning](/androidNativeLearning/01-现代Android心智总览) |
-| iOS 原生开发 | [iosNativeLearning](/iosNativeLearning/01-Swift6-iOS18-SwiftUI心智总览) |
+| Android 原生开发 | [androidNativeLearning](/androidNativeLearning/01-现代Android的一棵树) |
+| Android 平台基础 | [androidPlatformLearning](/androidPlatformLearning/01-Android的世界观) |
+| iOS 原生开发 | [iosNativeLearning](/iosNativeLearning/01-原生iOS的一张地图) |
 | Godot 游戏开发 | [godotLearning](/godotLearning/01-Godot4.6与2D独立游戏心智总览) |
 | 解释器 | [interpreterLearning](/interpreterLearning/01-解释器总览) |
 | 安全 | [securityLearning](/securityLearning/01-安全总览) |
