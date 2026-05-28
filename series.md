@@ -32,6 +32,7 @@
 | 解释器 | [解释器总览](/interpreterLearning/01-解释器总览) |
 | 安全 | [安全总览](/securityLearning/01-安全总览) |
 | Claude Code | [Claude-Code总览与心智](/claudeLearning/01-Claude-Code总览与心智) |
+| 杂项 | [源站IP暴露路径与Cloudflare防护说明](/杂项/源站IP暴露路径与Cloudflare防护说明) |
 
 [series-table:end]: #
 

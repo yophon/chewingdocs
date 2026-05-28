@@ -24,5 +24,6 @@ export const series = [
   { text: "Godot 游戏开发", dir: "godotLearning" },
   { text: "解释器", dir: "interpreterLearning" },
   { text: "安全", dir: "securityLearning" },
-  { text: "Claude Code", dir: "claudeLearning" }
+  { text: "Claude Code", dir: "claudeLearning" },
+  { text: "杂项", dir: "杂项" }
 ];
