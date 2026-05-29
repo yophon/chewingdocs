@@ -1,182 +1,405 @@
-# 01-Godot 4.6 与 2D 独立游戏心智总览
+# Godot 4.6 与 2D 独立游戏心智总览
 
-> 一句话导读:Godot 不是一套 UI 控件加脚本系统,而是一棵在主循环里被驱动的场景树;`Node` 是它的最小执行单元,`Resource` 是它的最小数据单元,`Signal` 是它在两者之间画出的依赖边。理解这三件事的位置,才能用一份代码把 2D 独立游戏做到可发布。
+学 Godot 最大的障碍不是 GDScript 语法,也不是编辑器按钮太多,而是**你没看懂 Godot 到底怎么组织一款游戏**。很多人打开 Godot 后第一反应是:"我建个 Player,写个 update,再写几个全局变量,不就能跑了吗?" 能跑,但很快就会乱——节点路径到处飞、场景一切换引用全断、UI 和玩家互相调用、存档和配置混在逻辑里。最后不是游戏做不出来,是工程先塌了。
 
-一个熟悉编程但没碰过游戏引擎的人,打开 Godot 4.6 后通常会有三种困惑。第一,空项目里那个看起来像文件浏览器的"FileSystem" dock 到底是怎么和场景关联起来的。第二,`_ready` 和 `_process` 这两个看似平凡的回调,为什么有时候慢、有时候被跳过、有时候连不到子节点。第三,工程做大后到处都是 `get_node("../../Enemy/HitBox")` 这种路径,稍微挪一下节点位置全线红屏。这些困惑都不是 GDScript 的语法问题,而是没把 Godot 的主循环模型在脑子里建起来。
+这一篇不教你做角色移动,也不教你点编辑器按钮。先讲一件事:**Godot 在脑子里应该长什么样**。这个模型建对了,后面 29 篇都是顺着它往下加东西;模型错了,你写得越多越难改。
 
-本系列的目标是用工程师的视角把这个模型讲透,顺着 30 篇一路演进到能在 itch.io 上挂出来的 2D 独立游戏原型。第一篇先把"Godot 是什么、它的心智边界在哪、为什么 4.6 这个版本值得作为基线"讲清楚,后续每一篇都会落到这条主线的某一段上。
-
-## 1. 机制定位
-
-独立游戏开发和写一个 CRUD 后端,本质区别在于"驱动方向"。后端服务是请求驱动的:外部触发,代码响应,执行完归零。游戏程序是循环驱动的:进程一启动就以每秒数十到上百次的频率重复执行同一个主循环,直到玩家关掉它。每一次循环里,引擎需要回答三个问题:这一帧有什么对象在场上(场景),它们各自的状态变成了什么(逻辑),它们要怎么呈现给玩家(渲染)。
-
-新手把这件事写崩的最常见姿势,是把所有逻辑塞进一个巨型 `update()` 函数,自己手动遍历对象列表,自己判断哪些对象进出场。这种写法在小 demo 阶段可行,稍微大一点就会撞到三个问题。第一,对象的生命周期管理成本爆炸:谁负责创建、谁负责释放、释放了之后还会不会有指针指向它。第二,跨对象通信变成全局耦合:玩家受伤要扣血、要响起音效、要刷新 UI、要触发屏幕震动,这四个动作如果通过 `Game.Instance.Player.Health` 互相调用,任何一个模块改动都会牵动其它三个。第三,资源加载和实例化混在主循环里,大场景切换时直接卡死几秒。
-
-游戏引擎的存在不是为了让你少写代码,而是为了在主循环的骨架上给出标准答案:用一棵显式的树管理对象生命周期,用统一的回调点把每一帧的工作切片,用资源-节点分离的方式把"数据"和"在场对象"解耦。Godot 给出的这套答案在 2D 场景下足够轻,在中等规模独立游戏里也不会被自己绊倒,这是它在 2D 独立游戏方向值得作为默认选项的核心理由。
-
-那为什么不是 Unity 或 GameMaker。Unity 在 2D 上能用,但它的工作流是 3D 优先的子集,Prefab 和 Scene 的二元结构对小团队反而是认知负担,且 2023 年起的商业政策让独立开发者重新评估了引擎绑定风险。GameMaker 适合非常聚焦的 2D pixel art 项目,代价是脚本语言能力受限,做到中后期想抽象出组件系统会很吃力。Godot 4.6 用一份开源协议、一套统一的 2D/3D 节点体系、一个原生类型化脚本和一个 100MB 不到的编辑器,把这两个折中点都堵上了。这不是说它没有缺点,3D 工具链至今不如 Unity 成熟,文档示例也偏短,但在 2D 独立游戏这条赛道上,它是被实际生产验证过的选项。
-
-为什么把基线钉在 4.6.x。Godot 4.x 系列的 API 在 4.0 到 4.5 之间有过几轮调整,网上能搜到的旧教程很多还停留在 4.0 或者 3.x。4.6 在 2026-01-26 发布,被官方明确定位为"质量与工作流"版本,而不是"新特性"版本,意味着接下来的 4.6.x 维护周期会比较稳。本系列写完后短期内不会因为引擎大改而漂移,这是工程化教程能做的最重要承诺。
-
-另一个角度看,4.6 这个版本对独立开发者特别关键的几个变化是:Modern Editor Theme 把蓝偏色去掉,让你在编辑器里调出来的颜色和最终游戏画面更接近;Movable/Floatable Docks 让一个人对着一个屏幕也能把 Animation、Shader 编辑、主视口的三窗并排;Jolt 成为 3D 物理默认(但和 2D 无关,2D 仍是 GodotPhysics2D,这一点必须记牢,后面 06 篇会重申);Unique Node IDs 让重命名/重组节点不再断引用;Delta-encoded patch PCKs 让你发了 0.1 版本后再发 0.1.1 的下载量大幅缩减。这些都是 2D 独立游戏开发的真实痛点,4.6 把它们一次性收口。
-
-## 2. Godot 心智
-
-把 Godot 拆开看,它由三层结构组成:**主循环**(`MainLoop` / `SceneTree`)、**节点树**(以 `Node` 为基类的运行时对象层级)、**资源**(以 `Resource` 为基类的可序列化数据)。这三层和它们之间的连接关系是后续 29 篇所有内容的脚手架,这里先把骨架立起来。
-
-**主循环**。Godot 进程启动后会创建一个 `MainLoop` 实例,默认实现是 `SceneTree`。`SceneTree` 维护一棵以 `root`(类型是 `Window`)为根的节点树,并在每一帧里按固定顺序回调树上所有需要响应的节点。一帧之内主要发生两件事:一次"物理 tick"(默认每秒 60 次,固定步长)和一次或多次"渲染 tick"(由显示器刷新率和 vsync 决定)。物理 tick 调用每个节点的 `_physics_process(delta)`,渲染 tick 调用每个节点的 `_process(delta)`。两者的 `delta` 含义不同,第 03 篇会展开。
-
-**节点树**。`Node` 是 Godot 的最小执行单元。它有名字、有父节点、有零或多个子节点、有一组生命周期回调(`_enter_tree` / `_ready` / `_process` / `_physics_process` / `_exit_tree`)、可以发出和接收信号。节点之间通过树的层级形成"包含"关系:一个 `Player` 节点下面挂一个 `Sprite2D`、一个 `CollisionShape2D`、一个 `AnimationPlayer`,这四者在内存里、在编辑器里、在场景文件里都是一个整体。当你 `queue_free()` 父节点时,所有子节点一起释放,这是 Godot 用"组合大于继承"管理对象生命周期的核心机制。
-
-2D 游戏里最常打交道的节点子类有:`Node2D`(任何在 2D 空间有 transform 的对象的基类)、`CanvasItem`(2D 渲染节点的基类,包括 `Node2D` 和 `Control`)、`Control`(UI 节点基类)、`CharacterBody2D` / `RigidBody2D` / `StaticBody2D` / `Area2D`(物理节点)、`Sprite2D` / `AnimatedSprite2D`(图像显示)、`TileMapLayer`(瓦片地图,4.3 起替代旧 `TileMap`)。这些都会在后续篇目里以专题形式展开,这里只需要先知道它们都是 `Node` 的子类,都在同一棵树上。
-
-**资源**。`Resource` 是 Godot 的可序列化数据基类。纹理(`Texture2D`)、字体、音频、动画、场景(`PackedScene`)、用户自定义的配置类,统统是资源。资源的关键特性是它和节点是解耦的:同一个 `Texture2D` 资源可以被 100 个 `Sprite2D` 节点共享,内存里只存一份;同一个 `PackedScene` 可以被 `instantiate()` 出 100 个独立的子树。资源还可以保存到 `.tres`(文本)或 `.res`(二进制)文件,这让"数据驱动"在 Godot 里几乎是零成本的:你不需要写 JSON 读写,直接定义 `class_name ItemData extends Resource`,然后在 Inspector 里编辑一份 `.tres`,代码里 `preload("res://data/item_sword.tres")` 就能拿到。
-
-**信号**。节点之间的解耦通信靠信号。信号是 Godot 内置的观察者模式实现:节点声明一个信号,其它节点连接到这个信号,信号被 `emit()` 时所有连接者依次被回调。信号的核心价值不是"减少代码量",而是反转依赖方向:`Player` 不需要知道 UI 存在,它只 emit `health_changed`;HUD 自己去连接这个信号,关心怎么显示。这条规则在后续 30 篇里反复出现,可以先记住一个直觉:**如果一个节点需要"通知别人发生了什么",用 signal;如果它需要"主动调用别人做什么",用方法调用**。
-
-把这四件事拼起来,Godot 的运行画面是:主循环按 tick 推进 → `SceneTree` 遍历节点树 → 每个 `Node` 在自己的回调里读资源、改状态、emit 信号 → 信号触发其它节点的方法 → 下一帧重复。
-
-这个模型与 Unity 的"Component on GameObject"或 Unreal 的"Actor with Components"有一处关键差异值得点出:**Godot 没有"组件"这一层**,所有可挂的东西都是 `Node`。在 Unity 里 `Player` 是一个 GameObject,上面挂 `Transform`、`Rigidbody`、`SpriteRenderer`、`PlayerController` 四个 Component;在 Godot 里 `Player` 是一棵子树,`CharacterBody2D` 是根、`Sprite2D` 是子、`CollisionShape2D` 是子、自定义脚本附在根上。这听起来繁琐,但带来的好处是组件的层级和位置都是显式的,你能直接看到摄像机挂在玩家下面还是和玩家并列;并且因为子节点本身有完整的 transform 与生命周期,所谓的"组合"就是"挂子节点",不需要专门的组件框架。第 17 篇会展开"组件化在 Godot 里怎么做"。
-
-另一个值得提前埋下的观察是**节点和资源的内存归属差异**。一个节点同一时刻只能在一个父节点下(独占,自动 `queue_free` 释放),一个资源可以被任意多个节点引用(共享,引用计数释放)。这条规则解释了 Godot 里为什么"角色配置"被设计成 Resource 而不是 Node:你不需要"在场上有一个 SwordConfig 节点",你只需要让 100 把剑共用同一份 SwordConfig.tres。后续 05 篇会用一篇专门展开 Resource 的工程价值。
-
-## 3. 工程实现
-
-理论到这里就够了,先把一个最小可运行的项目骨架立起来。本系列后续所有篇目都基于这个骨架演进,不会让你每篇都从零新建。
-
-打开 Godot 4.6,新建项目时选择"Forward+"渲染后端(2D 也用这个,后续讲渲染时会解释为什么不是"Compatibility")。项目目录约定如下,这是从中等规模独立游戏倒推出来的最小可扩展结构:
-
-```text
-res://
-├── assets/         # 第三方资源原始素材,纹理、音频、字体
-├── data/           # .tres 配置资源(物品、关卡参数、敌人配置)
-├── scenes/         # 玩法场景(关卡、菜单)
-├── player/         # 玩家相关脚本与场景
-├── enemies/        # 敌人相关脚本与场景
-├── ui/             # HUD、菜单等 Control 子树
-├── globals/        # Autoload 单例脚本
-├── tools/          # @tool 脚本与编辑器插件
-└── project.godot   # 项目入口
-```
-
-不要新建一个 `scripts/` 目录把所有 `.gd` 文件丢进去。脚本应该和它服务的场景放在一起,这样改一个机制时不需要在两棵目录树之间来回跳。`assets/` 单独放原始素材,避免和导出场景混在一起,后期清理"哪些资源真的在用"会容易很多。
-
-接下来写本系列的第一个文件,一个全局打印生命周期事件的小工具,放在 `res://globals/game_log.gd`,它会被注册为 Autoload(Project Settings → Autoload),后续每一篇都可以用它打印观察点:
-
-```gdscript
-# res://globals/game_log.gd
-extends Node
-
-## 全局日志。Autoload 名设为 GameLog。
-## 设计取舍:不引入第三方 logger,贴近引擎,后续可以替换为
-## 写文件、上报崩溃,但接口尽量稳定。
-
-enum Level { DEBUG, INFO, WARN, ERROR }
-
-@export var min_level: Level = Level.DEBUG
-
-func d(tag: String, msg: String) -> void:
-    _log(Level.DEBUG, tag, msg)
-
-func i(tag: String, msg: String) -> void:
-    _log(Level.INFO, tag, msg)
-
-func w(tag: String, msg: String) -> void:
-    _log(Level.WARN, tag, msg)
-
-func e(tag: String, msg: String) -> void:
-    _log(Level.ERROR, tag, msg)
-
-func _log(level: Level, tag: String, msg: String) -> void:
-    if level < min_level:
-        return
-    var stamp: String = "%6.2f" % (Time.get_ticks_msec() / 1000.0)
-    var level_str: String = Level.keys()[level]
-    print("[%s][%s][%s] %s" % [stamp, level_str, tag, msg])
-```
-
-注册 Autoload 后,在任何脚本里直接用 `GameLog.i("Player", "hello")` 就能调用。为什么从 logger 开始而不是从 Player 角色开始,因为后续每一篇讲生命周期、信号顺序、状态变化时都需要观察点,从头建一个比每篇里散写 `print()` 要省事。
-
-然后写一个最小主场景 `res://scenes/main.tscn`,场景树如下:
-
-```text
-Main (Node2D)
-├── World (Node2D)         # 关卡、敌人挂在这下面
-├── UI (CanvasLayer)        # HUD 与菜单,独立于摄像机变换
-└── Camera2D                # 主摄像机
-```
-
-为它写一个挂载脚本 `res://scenes/main.gd`:
-
-```gdscript
-# res://scenes/main.gd
-class_name Main
-extends Node2D
-
-## 入口场景。负责把当前关卡加载到 World 下,
-## 把 HUD 加到 UI 下,主循环本身交给 SceneTree。
-
-const HUD_SCENE: PackedScene = preload("res://ui/hud.tscn")
-
-@onready var world: Node2D = $World
-@onready var ui_layer: CanvasLayer = $UI
-
-func _ready() -> void:
-    GameLog.i("Main", "entering main scene")
-    _mount_hud()
-
-func _mount_hud() -> void:
-    var hud: Control = HUD_SCENE.instantiate()
-    ui_layer.add_child(hud)
-
-func _unhandled_input(event: InputEvent) -> void:
-    if event.is_action_pressed("ui_cancel"):
-        # 暂停或退出统一在这里收口,后面 13 篇会换成菜单调用
-        GameLog.i("Main", "user requested quit")
-        get_tree().quit()
-```
-
-这个文件 30 行不到,但已经覆盖了三个本系列后续会反复用到的工程惯例:`class_name` 让脚本类型可以在 Inspector 与代码里互相识别;`@onready var x: Type = $Path` 是 Godot 4.x 拿子节点的标准姿势,在 `_ready` 之前不会求值;`preload` 在脚本加载时就解析资源,适合"一定会用到、且不需要动态选择"的场景。`HUD` 本身可以是空的 `Control` 节点,占位即可,后续第 13 篇会把它做实。
-
-到这里项目骨架就立起来了。后续 29 篇的每一段代码,都会落在这个目录的某个子树下,不需要新建工程。
-
-## 4. 调参和验收
-
-第一篇没有具体可调的运行时参数,但有几个项目级设置值得在动笔前就确认下来,它们会影响后续每一篇示例的渲染表现。打开 Project Settings,把如下项确认到位:
-
-- **Display → Window → Size → Viewport Width / Height**:本系列示例统一用 640×360 设计分辨率,可整数缩放到 1280×720、1920×1080,适合像素风也兼容矢量风。
-- **Display → Window → Stretch → Mode**:设为 `canvas_items`。这意味着 2D 内容按视口缩放、UI 也按视口缩放,但保持像素精确度。第 10 篇会展开这一项与 `viewport` 模式的差异。
-- **Rendering → Textures → Canvas Textures → Default Texture Filter**:像素风项目设为 `Nearest`,非像素风留 `Linear`。这是后续避免"为什么我的像素图变模糊"踩坑的唯一开关。第 02 篇会详细讲。
-- **Physics → Common → Physics Ticks per Second**:保持默认 60。低于 60 会让 `move_and_slide` 在快速对象上出现穿透,高于 60 收益不大。第 06 篇展开。
-- **General → Editor → Theme → Preset**:Godot 4.6 默认就是新的 Modern 主题(灰阶、去蓝偏色),如果你打开是 Classic,切到 Modern 让截图和后续篇目保持一致。
-
-验收标准很简单,这一篇做到位的检验是:你按上面的目录结构和两段脚本搭好骨架,F5 运行,控制台能看到 `GameLog` 打出的 `entering main scene` 一行,且按 Esc 能正常退出。
-
-回看 30 篇的整体目标,这篇做完后,你应当知道:本系列最终会做出一个能在 itch.io 上挂出来给陌生玩家试玩的 2D 原型,而不是一个永远停留在"角色能动"的玩具。要让陌生玩家试玩,具体需要补齐的能力包括:稳定的角色手感(06-10 篇)、有内容的关卡和敌人(11-15 篇)、能数据驱动地扩展内容(16-20 篇)、能在低端机上跑(21-24 篇)、能打成 Windows/macOS/Linux/Web 多个版本(26 篇)、有最小可用的存档和设置菜单(13-14 篇)、有面向中文玩家的本地化(27 篇)。这些都是逐篇加进同一个工程,而不是每篇新建一个 demo。
-
-如果你之前用过 Unity 或者 GameMaker,有一件事会让前几篇感觉"不太对":Godot 没有 prefab 的概念,但有"场景作为可实例化资源"的概念。任何一个 `.tscn` 都可以 `preload` 后 `instantiate()` 出多份独立实例,既扮演 Unity 的 Scene,又扮演 Unity 的 Prefab。本系列后续会反复用到"把一个子树存成场景再实例化",这是 Godot 工程组织最核心的复用单元,理解到位后许多 Unity 习惯里复杂的 prefab variant 问题在 Godot 里都消失了。
-
-## 5. 踩坑
-
-第一类常见错觉是**把 Godot 想成"带渲染的脚本运行时"**。这种心智下,你会写出一个全局 `Game` 类,把场景节点全部塞成它的字段,然后所有逻辑都从 `Game.update()` 里发出。这套写法表面上能跑,但你彻底没用到场景树的"对象在树上、生命周期跟着树走"的优势,后期任何"我想在某个场景里复用某段逻辑"都会卡住。Godot 的对象组织方向是反过来的:每个 `Node` 自己负责自己的逻辑,树负责调度,Autoload 单例只放真正全局的、跨场景的少量状态(配置、存档、事件总线),而不是把所有东西塞进去。
-
-第二类是**把 Unity 的 `Update` 心智直接套到 `_process`**。Unity 里 `Update` 是每帧调用,粗略对应 `_process`,但 Unity 没有 Godot 那种"物理 tick 固定 60Hz 独立于渲染 tick"的明确分离,容易让人忘掉 `_physics_process` 的存在。在 Godot 里,任何调用了物理 API(`move_and_slide`、`apply_central_impulse`、刚体属性读写)的逻辑都应该写在 `_physics_process`,否则在帧率波动时会出现明显的抖动。第 03 篇和第 06 篇会反复强调这一点。
-
-第三类是**版本错配**。Godot 4.0 到 4.5 之间有若干 API 调整,网上大量教程停留在 4.0/4.1。最常见的过时写法包括:`yield()` 关键字(4.x 已经换成 `await`)、`KinematicBody2D`(4.x 改名 `CharacterBody2D`)、旧的 `TileMap`(4.3 起 deprecated,4.6 仍可用但应优先 `TileMapLayer`,第 11 篇展开)、`onready` 没有 `@` 前缀(4.x 改成 `@onready` 装饰器)。看到这些写法直接判定教程过期,不要花时间硬翻译。
-
-第四类是**过早讨论 GDExtension 和 C# 选型**。新手往往会担心"GDScript 性能够不够",然后在还没跑通一个能玩的关卡前就花两周折腾 C# 配置或者 Rust 绑定。本系列把 GDExtension 放到第 25 篇,意思是:在你做出一个有玩家、有敌人、有关卡、有 HUD、有存档的原型之前,99% 的性能瓶颈都不在脚本语言上,而在你怎么组织节点和资源上。先把脚手架立起来,再考虑要不要换语言。
-
-第五类是**不读官方文档,直接 ChatGPT**。Godot 4.6 的文档结构很完整(docs.godotengine.org),关键类(`Node`、`SceneTree`、`Resource`、`CharacterBody2D`)的页面都附带使用示例。一旦遇到 API 行为不符合预期,优先查官方文档对当前版本的描述,再看 Issue 区,最后才是问 LLM。LLM 在 Godot 上的知识切片往往滞后一两个版本,本系列每一篇关键 API 都会标注官方文档锚点。养成一个习惯:看到任何 API,先在文档里搜一次,确认它在 4.6 还是有效的,这条原则对 GDScript 这种迭代频繁的脚本环境尤其重要。
-
-## 手动验证
-
-- [ ] 装好 Godot 4.6.x(最新维护版本即可,本系列以 4.6.3 为参照),打开 Editor Settings → Editor → Theme,确认 Preset 是 Modern。
-- [ ] 按第 3 节的目录结构新建项目,`globals/game_log.gd` 与 `scenes/main.gd` 两个文件按本文清单建好。
-- [ ] 在 Project Settings → Autoload 把 `game_log.gd` 注册为 `GameLog`,F6 单独跑 `main.tscn` 时控制台能看到 `entering main scene` 日志。
-- [ ] 检查 Project Settings 中的视口尺寸、Stretch Mode、Default Texture Filter 三项与第 4 节一致。
-- [ ] Esc 退出能正常关闭进程,不残留窗口。
-- [ ] 阅读 `class Node` 和 `class SceneTree` 官方文档各一次,即使不背 API,知道页面在哪、有哪些章节。
+> 一句话先记住:**Godot 是一棵被主循环驱动的场景树;Node 是树上的执行单元,Resource 是可复用的数据单元,Signal 是节点之间说话的方式**。2D 游戏不是一个巨大的 `update()` 函数,而是一堆节点在每一帧各自做自己的事。
 
 ---
 
-下一篇:`02-项目结构-资源导入与像素级基础配置.md`,把这一篇里只点到名字的"资源导入"、"Modern Editor Theme"和"Movable Docks"在工程化层面展开,顺带把后续每一篇都会用到的纹理/音频/字体导入预设钉死。
+## 一、Godot 不是"带脚本的画布"
+
+新手最容易把 Godot 想成这样:
+
+```
+一张画布
+  + 一堆图片
+  + 几段脚本
+  + 一个全局 GameManager
+```
+
+这个心智会直接把项目带偏。因为真实游戏里最难的不是"把图片画出来",而是这些问题:
+
+- 玩家什么时候创建,什么时候销毁
+- 敌人死了之后,谁负责清理它的碰撞体、血条、粒子和音效
+- HUD 怎么知道玩家血量变了,但又不反过来依赖玩家内部字段
+- 切关卡时,哪些状态保留,哪些节点必须全部释放
+- 一份武器配置怎么被 100 个敌人共享,而不是复制 100 份
+
+Godot 给这些问题的答案不是"写一个更大的管理类",而是**场景树**。
+
+```
+Main
+├── World
+│   ├── Player
+│   │   ├── Sprite2D
+│   │   ├── CollisionShape2D
+│   │   └── HurtBox
+│   ├── Enemy
+│   └── TileMapLayer
+├── UI
+│   └── HUD
+└── Camera2D
+```
+
+这棵树不是编辑器里的摆设,它就是运行时结构。节点进树,开始工作;节点出树,生命周期结束;父节点释放,子节点跟着释放。**你不是在一张画布上摆东西,你是在维护一棵活着的对象树**。
+
+> 先把这个念头刻住:**Godot 项目的基本单位不是脚本,而是场景;场景的本质是一棵节点子树**。一个 Player 不是一个类,而是一棵可以被实例化、挂到世界里的小树。
+
+---
+
+## 二、主循环:游戏为什么一直在动
+
+普通后端服务是请求驱动的:
+
+```
+请求进来 → 代码执行 → 返回结果 → 等下一次请求
+```
+
+游戏不是这样。游戏是循环驱动的:
+
+```
+启动游戏
+  → 读输入
+  → 更新逻辑
+  → 处理物理
+  → 渲染画面
+  → 下一帧继续
+直到玩家退出
+```
+
+Godot 里这个循环由 `SceneTree` 管。它每一帧会去调用树上节点的回调:
+
+| 回调 | 什么时候用 | 常见例子 |
+| --- | --- | --- |
+| `_ready()` | 节点和子节点都进树后调用一次 | 初始化引用、连接信号 |
+| `_process(delta)` | 每帧调用,跟渲染帧率走 | UI 动画、非物理计时 |
+| `_physics_process(delta)` | 固定频率调用,默认 60 次/秒 | 移动、碰撞、刚体相关逻辑 |
+| `_unhandled_input(event)` | 输入没被 UI 消费时调用 | 角色控制、暂停、调试快捷键 |
+| `_exit_tree()` | 节点离开树时调用 | 断开连接、收尾清理 |
+
+很多初学者会把所有逻辑塞进 `_process()`。这会带来两个问题:
+
+1. **帧率一变,手感就变**。144 FPS 和 30 FPS 下,移动距离、跳跃判定、碰撞时机都可能不一致。
+2. **物理逻辑和显示逻辑混在一起**。角色移动、碰撞检测应该跟固定物理 tick 走,不是跟显示器刷新率走。
+
+简单规则:
+
+```
+会碰撞、会移动、会影响物理世界 → _physics_process
+只是显示、计时、UI、特效       → _process
+只初始化一次                   → _ready
+```
+
+> 这就是为什么第 06 篇讲角色移动时,所有核心移动逻辑都会放进 `_physics_process`。不是风格问题,是游戏手感问题。
+
+---
+
+## 三、Node:场上真正干活的东西
+
+`Node` 是 Godot 的最小执行单元。它有几个关键能力:
+
+- 有名字
+- 能挂子节点
+- 有生命周期回调
+- 能发信号
+- 能被加入或移出场景树
+
+2D 游戏里常见节点大概分几类:
+
+| 节点 | 干什么 |
+| --- | --- |
+| `Node2D` | 2D 空间里的通用节点,有位置、旋转、缩放 |
+| `Sprite2D` / `AnimatedSprite2D` | 显示图片或帧动画 |
+| `CharacterBody2D` | 玩家、敌人这类"自己控制移动"的物体 |
+| `Area2D` | 触发区、受击框、拾取范围 |
+| `CollisionShape2D` | 碰撞形状,通常挂在物理节点下面 |
+| `Camera2D` | 镜头 |
+| `Control` | UI 基类 |
+| `CanvasLayer` | 让 UI 脱离世界坐标,固定在屏幕上 |
+| `TileMapLayer` | 2D 瓦片地图 |
+
+Godot 和 Unity 最大的心智差别在这里:
+
+| 引擎 | 组织方式 |
+| --- | --- |
+| Unity | 一个 GameObject 上挂多个 Component |
+| Godot | 一个场景是一棵 Node 子树 |
+
+Unity 里你会说"Player 上挂了 SpriteRenderer、Rigidbody、Collider、Controller"。Godot 里你会说"Player 是一个 `CharacterBody2D`,下面有 `Sprite2D`、`CollisionShape2D`、`AnimationPlayer`、`HurtBox`"。
+
+这不是文字差异,会影响你的架构习惯。Godot 里"组合"最自然的方式就是**挂子节点**:
+
+```
+Player (CharacterBody2D)
+├── Sprite2D
+├── AnimationPlayer
+├── CollisionShape2D
+├── HealthComponent
+├── HitBox
+└── HurtBox
+```
+
+每个子节点负责一小块事情。血量组件只管血量,受击框只管被打,动画节点只管播放动画。Player 根节点做协调,但不要把所有逻辑吞进去。
+
+> 后面第 17 篇讲组件化时,不会引入一套复杂框架。Godot 里的组件化优先用"子节点 + 信号 + Resource 配置"解决。
+
+---
+
+## 四、Resource:别把配置写死在节点里
+
+如果 `Node` 是场上会动的东西,那 `Resource` 就是可以复用的数据。
+
+常见 Resource:
+
+- 图片:`Texture2D`
+- 音频:`AudioStream`
+- 场景:`PackedScene`
+- 动画、字体、材质
+- 你自己定义的配置,比如 `WeaponData`、`EnemyData`、`ItemData`
+
+为什么要有 Resource?因为很多数据**不应该属于某一个节点**。
+
+比如一把剑:
+
+```gdscript
+class_name WeaponData
+extends Resource
+
+@export var name: String
+@export var damage: int
+@export var cooldown: float
+@export var icon: Texture2D
+```
+
+这份配置可以保存成 `res://data/weapons/sword.tres`。然后玩家、敌人、商店、掉落表都可以引用它。你改一次 `damage`,所有用这把剑的地方都生效。
+
+如果不用 Resource,新手通常会写成:
+
+```gdscript
+var sword_damage := 10
+var sword_cooldown := 0.4
+var sword_icon_path := "res://assets/sword.png"
+```
+
+看起来简单,后面一定乱。因为这些值会散落在玩家、敌人、UI、掉落逻辑、存档逻辑里。改一次武器,要搜全项目。
+
+**Node 和 Resource 的边界:**
+
+| 问题 | 用 Node | 用 Resource |
+| --- | --- | --- |
+| 它会出现在场景树里吗 | 是 | 否 |
+| 它有位置、生命周期、回调吗 | 是 | 否 |
+| 它只是配置或素材吗 | 否 | 是 |
+| 它会被很多对象共享吗 | 不适合 | 适合 |
+
+> 一句话判断:**会动、会进场、会被释放的,用 Node;只是数据、配置、素材的,用 Resource**。
+
+---
+
+## 五、Signal:节点之间别互相硬拽
+
+游戏里对象之间一定要通信。玩家受伤后:
+
+- 血量要减少
+- HUD 要刷新
+- 屏幕要震动
+- 音效要播放
+- 可能还要触发无敌时间
+
+最差的写法是 Player 直接调用所有人:
+
+```gdscript
+hud.update_hp(hp)
+camera.shake()
+audio.play_hurt()
+```
+
+这会让 Player 知道太多东西。HUD 改名了,Player 要改;Camera 移到别的层级,Player 要改;以后加一个成就系统,Player 还要改。
+
+Godot 的正常写法是发信号:
+
+```gdscript
+signal health_changed(current: int, max_value: int)
+signal died
+
+func take_damage(amount: int) -> void:
+    hp = max(0, hp - amount)
+    health_changed.emit(hp, max_hp)
+    if hp == 0:
+        died.emit()
+```
+
+Player 只宣布"我血量变了"、"我死了"。谁关心这件事,谁自己去连接:
+
+| 关心者 | 反应 |
+| --- | --- |
+| HUD | 刷新血条 |
+| Camera2D | 屏幕震动 |
+| AudioManager | 播放受伤音效 |
+| GameFlow | 判断是否死亡重开 |
+
+这就是解耦。**发出事件的人不需要知道接收者是谁**。
+
+简单规则:
+
+```
+我需要命令某个明确对象立刻做事 → 方法调用
+我只是宣布一件事发生了       → Signal
+```
+
+> Godot 项目一旦变大,Signal 用得好不好,基本决定了你的场景能不能拆、能不能复用、能不能改。
+
+---
+
+## 六、为什么这个系列选 Godot 做 2D
+
+不是因为 Godot 完美。Godot 的 3D 生态、资产市场、商业插件数量都不如 Unity。但如果目标是**一个人或小团队做 2D 独立游戏**,Godot 的优势非常直接:
+
+| 维度 | Godot 的好处 |
+| --- | --- |
+| 体量 | 编辑器小,启动快,项目轻 |
+| 授权 | 开源,没有运行时抽成焦虑 |
+| 2D | 2D 是一等公民,不是 3D 系统的附属品 |
+| 脚本 | GDScript 贴近引擎,反馈快 |
+| 场景 | `.tscn` 文本化,适合 git 管理 |
+| 数据 | Resource / Inspector 让小团队不用先造编辑器 |
+
+和 Unity 比:
+
+- Unity 更成熟,生态更大
+- Godot 更轻,更适合小型 2D 原型快速闭环
+- Unity 的 Prefab / Scene / Component 体系很强,但对独立 2D 新手也更重
+
+和 GameMaker 比:
+
+- GameMaker 上手更快
+- Godot 的工程上限更高,脚本、资源、插件、导出链路更像完整引擎
+
+所以本系列的立场很明确:**如果你要做 2D 独立游戏,且希望项目能从 demo 长到可发布原型,Godot 是一个很合理的默认选择**。
+
+---
+
+## 七、Godot 4.6 这条基线意味着什么
+
+本系列以 Godot 4.6.x 为基线,不是为了追新,而是为了少踩旧教程的坑。
+
+你在网上搜 Godot 教程,会看到大量 3.x / 4.0 / 4.1 的写法。常见过时代码:
+
+| 旧写法 | 4.x 里应该怎么看 |
+| --- | --- |
+| `KinematicBody2D` | 已换成 `CharacterBody2D` |
+| `yield()` | 4.x 用 `await` |
+| `onready var` | 4.x 用 `@onready var` |
+| 旧 `TileMap` 教程 | 4.3 之后优先用 `TileMapLayer` |
+| 无类型 GDScript 到处飞 | 本系列默认写类型标注 |
+
+还有几个 4.6 相关点,先有印象就行:
+
+- 4.6 的编辑器工作流更稳,适合做教程基线
+- 2D 物理仍然是 GodotPhysics2D,不要把 3D 的 Jolt 变更误套到 2D
+- Windows 导出、补丁包、dock 工作流这些会在后面发布篇和工具篇展开
+
+> 这里不用背版本更新。只要记住:**看到旧教程里的类名和语法,先确认它是不是 4.x 仍然推荐的写法**。别把过时代码硬搬进新项目。
+
+---
+
+## 八、本系列最后要做出什么
+
+这个系列不是"每篇一个孤立 demo"。我们会逐步搭一个能发布的 2D 原型。不是商业成品,但至少要有完整游戏闭环:
+
+```
+主菜单
+  → 进入关卡
+  → 玩家移动 / 跳跃 / 受击
+  → 敌人巡逻 / 追击 / 掉落
+  → HUD 显示状态
+  → 存档和配置生效
+  → 死亡重开 / 胜利结算
+  → 打包导出
+```
+
+路线大概这样:
+
+```
+01-05  引擎心智:场景树、项目结构、GDScript、Resource、Signal
+06-10  角色手感:移动、输入缓冲、动画状态机、碰撞、镜头
+11-15  可玩闭环:关卡、敌人、UI、存档、场景流
+16-20  扩展玩法:事件总线、组件、道具配置、光影、音频反馈
+21-25  高级能力:Shader、程序化生成、性能、异步加载、GDExtension
+26-30  发布维护:导出、本地化、工具插件、联机入门、发售检查
+```
+
+优先级也很简单:
+
+- 想先做出能玩的东西:读 01-15
+- 想让内容可扩展:读 16-20
+- 想做表现和性能:读 21-25
+- 想真的发出去:读 26-30
+
+---
+
+## 九、第一天应该怎么开始
+
+不要第一天就研究 GDExtension、Shader、联机、编辑器插件。先做最小骨架:
+
+```
+res://
+├── assets/        # 图片、音频、字体
+├── data/          # .tres 配置资源
+├── scenes/        # 主场景、关卡、菜单
+├── player/        # 玩家场景和脚本
+├── enemies/       # 敌人场景和脚本
+├── ui/            # HUD、菜单
+├── globals/       # 少量 Autoload
+└── project.godot
+```
+
+然后只建一个主场景:
+
+```
+Main (Node2D)
+├── World (Node2D)
+├── UI (CanvasLayer)
+└── Camera2D
+```
+
+这就够了。第一天的目标不是写玩法,而是让你知道:
+
+- 世界内容挂在哪里
+- UI 挂在哪里
+- 镜头归谁管
+- 后面玩家和敌人会被加到哪里
+- 哪些东西不应该丢进全局单例
+
+> 小项目最容易死在"一开始随便放,以后再整理"。游戏工程里,以后通常不会来。先把目录和主场景搭对,后面少还很多债。
+
+---
+
+## 十、踩坑提醒
+
+1. **把所有逻辑塞进一个 `GameManager`**  
+   这会让场景树失去意义。全局单例只放跨场景状态、存档入口、事件总线这类真正全局的东西。
+
+2. **到处写 `$"../../SomeNode"`**  
+   节点路径越长,越说明依赖关系有问题。优先用导出引用、局部子节点、信号,少跨层硬找。
+
+3. **把配置写死在脚本里**  
+   武器、敌人、道具、关卡参数这类数据,后面都应该进 Resource。脚本负责行为,Resource 负责数据。
+
+4. **所有东西都放 `_process()`**  
+   物理移动放 `_physics_process()`。不然帧率一波动,手感和碰撞就会出问题。
+
+5. **把 Signal 当魔法乱连**  
+   Signal 是解耦工具,不是全局消息垃圾桶。谁发、谁听、生命周期在哪断开,都要清楚。
+
+6. **第一天就纠结语言性能**  
+   2D 独立游戏早期瓶颈通常不是 GDScript,而是节点组织、资源加载、碰撞设计和渲染批次。先做出可玩闭环。
+
+7. **照搬旧教程不看版本**  
+   看到 `KinematicBody2D`、`yield()`、旧 TileMap 写法,先停一下。确认它在 Godot 4.6 里是不是仍然推荐。
+
+---
+
+下一篇:`02-项目结构-资源导入与像素级基础配置.md`,开始把空项目搭起来:目录怎么分、资源怎么导入、像素风为什么会糊、哪些项目设置第一天就要定死。

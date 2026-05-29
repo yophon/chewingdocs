@@ -1,162 +1,99 @@
-# 05-Resource、Signal 与场景解耦基础
+# Resource、Signal 与场景解耦基础
 
-> 一句话导读:`Resource` 让数据可以脱离场景独立存在并被复用,`Signal` 让节点之间不必互相 `get_node`。两者配合,场景树就从"耦合的网"变成"单向的图"。
+前几篇已经把项目骨架、节点生命周期、GDScript 写法讲清楚了。现在会遇到一个更现实的问题:节点越来越多以后,谁去找谁?数据放哪?UI 怎么知道玩家掉血了?
 
-第 04 篇把代码层契约讲清楚了。本篇把契约提升到**场景层**:不再是"这个函数参数是什么类型",而是"这段数据怎么存、谁能改"、"这件事怎么通知出去、谁有权听到"。一旦把 `Resource` 和 `Signal` 的边界守住,Godot 项目的可维护性就有了天花板。
-
-读者画像默认:你已经会写一个能在场景里跑的 GDScript 脚本,知道 `_ready` 和 `_process` 怎么用,但你的代码里到处是 `get_node("/root/Game/HUD/Score")`,改一次场景结构就要全局搜替换。本篇要让你脱离这种状态。
-
-## 1. 机制定位
-
-新手在 Godot 里写代码,常见会演化出两种"反模式":
-
-**反模式一:节点路径硬编码**。把"玩家"和"血条 UI"放在同一棵场景树里,玩家受伤时直接 `get_node("/root/Game/HUD/HealthBar").value -= dmg`。这种写法在第一个 demo 里跑得很好,但当你把这个玩家场景搬去新关卡、或者重命名上层节点,所有路径同时断裂。再激进一点的版本是 `get_parent().get_parent().get_node("HUD")`,这种代码三个月后没人能看懂它在引用哪里。
-
-**反模式二:数据写死在脚本里**。敌人 HP 100、攻击力 5、掉落金币数,都直接放在 `enemy.gd` 里的成员变量。需要 10 种不同强度的敌人时,要么复制 10 份脚本,要么写一个 if-else 的工厂方法。然后策划想加一种"血更厚一点的精英版",你只能改代码再编译再跑。
-
-这两种反模式的根因是一样的:**把代码、数据、场景结构三者混在一起**。Godot 给出的解药是把它们解耦成三层:
-
-- 场景结构(树)由 `.tscn` 描述,运行时由场景树实例化。
-- 数据由 `Resource` 描述,作为 `.tres` 文件独立存在,可以在 Inspector 编辑,可以在多个场景间共享。
-- 通讯由 `Signal` 完成,发送方只管广播"我发生了什么",接收方自己决定要不要订阅。
-
-熟悉前端工程的工程师,可以把这套机制类比成"组件 / Props / 事件":`PackedScene` ≈ Component,`Resource` ≈ Props/Config,`Signal` ≈ EmittedEvent。但 Godot 4.6 引入的 **Unique Node IDs** 又给这套体系加了一个保险:即便你重命名或重组场景树,只要节点被标为 `%UniqueName`,引用就不会断 —— 这条改变了上一代 Godot 教程里"信号要连稳定路径"的旧建议,后面会专门讲。
-
-更进一步地,在写代码之前不妨先在脑子里画一张图:**数据(Resource)放正中,场景节点围在外圈,信号是从内向外、从一处向多处的箭头**。这张图与传统 OOP "父对象持有子对象的引用、子对象回调父对象方法" 不同 —— Godot 鼓励你把状态外置成资源,而不是塞在节点字段里。等你做到第 15 篇的场景流管理时会发现,只有这种"资源居中"的设计,场景切换才不需要把数据反复重建。
-
-本篇要解决的就是:让你下笔写 `enemy.gd` 时,数据进 `.tres`,代码进 `.gd`,通讯走 `signal`,引用走 `%UniqueName` 或 `@export`,不再出现一行 `get_node("/root/...")`。
-
-## 2. Godot 心智
-
-### `Resource` 到底是什么
-
-`Resource` 是 `RefCounted` 的子类,在 Godot 里扮演"序列化数据容器"。它不是节点,不出现在场景树里;它是值,通过引用计数被多个使用方共享。所有 Godot 内置的"配置型对象"几乎都是 `Resource` 的子类:`Texture2D`、`PackedScene`、`AudioStream`、`Mesh`、`Animation`、`Theme`、`Curve`、`Gradient`。
-
-这是个值得停下来体会的事实:**`PackedScene` 也是一种 `Resource`**。你右键创建的每一个 `.tscn` 文件,在引擎眼里就是"一份打包好的节点数据"。`load("res://player.tscn")` 拿回来的是 `PackedScene`,再调 `instantiate()` 才得到一棵真实的节点树。这条心智一旦内化,你会发现 Godot 的"场景"和"资源"其实是同一种东西的不同表面 —— 都通过 `ResourceLoader` 走加载缓存,都用 `.import` 机制驱动重导入,都能在 Inspector 里编辑。
-
-`Resource` 有三种存在形态:
-
-1. **作为文件存在**(`.tres` 文本格式或 `.res` 二进制),通过 `ResourceLoader.load()` 或 `preload()` 加载到内存,Engine 用一个全局缓存表保证"同一个路径只加载一次"。
-2. **作为内嵌资源存在**,直接写在某个 `.tscn` 或 `.tres` 文件内部,语法上是 `SubResource("Texture2D_xyz")`,不能跨场景共享。
-3. **作为运行时对象存在**,`MyResource.new()` 创建后只在内存里,可以 `ResourceSaver.save()` 写到磁盘上变成 `.tres`。
-
-工程上的关键性质是**默认共享**。`preload("res://enemies/goblin.tres")` 在不同场景里被调用三次,拿到的是同一个 `Resource` 实例。你在一处修改 `hp` 字段,所有引用同步可见。这通常是好事(用作"敌人模板"很合适),但偶尔会出问题(把模板当成 runtime state 改),所以 `Resource` 有一个 `resource_local_to_scene` 属性:打开后,每次场景实例化都会克隆出独立副本。这是后续第 17 / 18 篇做组件化与配表时的关键开关。
-
-### 自定义 `Resource` 的写法
-
-写一个自定义资源类只需要继承并标 `class_name`,Godot 编辑器会自动在 "Create New Resource" 对话框里列出:
+很多 Godot 项目不是死在功能做不出来,而是死在这种代码里:
 
 ```gdscript
-class_name EnemyStats
-extends Resource
-
-@export var hp: int = 100
-@export var attack: int = 5
-@export var move_speed: float = 80.0
-@export var sprite: Texture2D
-@export var loot_table: Array[StringName] = []
+func take_damage(amount: int) -> void:
+    hp -= amount
+    get_node("/root/Main/HUD/HPBar").value = hp
+    get_parent().get_node("Camera").shake()
 ```
 
-之后右键 `enemies/` 目录 -> New Resource -> EnemyStats -> 保存为 `goblin.tres`,就有了一份可被 Inspector 编辑、可被多个敌人场景引用的数据对象。这正是 Godot 4.x 推荐的"数据驱动"工作流的最小骨架。
+这段代码短期能跑,长期很难维护。玩家脚本知道 HUD 在哪里,知道 Camera 在哪里,还知道它们内部节点叫什么。只要你改一下场景结构,血条、镜头、玩家逻辑就一起断。
 
-### `Signal` 的两种形态
+> 一句话先记住:**Resource 管数据,Signal 管通知,节点少互相找。**
 
-`Signal` 在 GDScript 里有两层:声明形态和运行时形态。
+`Resource` 解决“这类东西的参数放哪”;`Signal` 解决“发生了某件事怎么告诉别人”;`@export` 和 `%UniqueName` 解决“引用从哪里来”。把这四个东西用顺,场景树才不会变成一张乱网。
 
-**声明形态**用 `signal` 关键字写在脚本顶部:
+---
+
+## 一、先看坏味道
+
+假设你做了一个玩家:
 
 ```gdscript
-signal died
-signal hp_changed(new_hp: int, max_hp: int)
-signal stat_buffed(stat_name: StringName, value: float)
+class_name Player
+extends CharacterBody2D
+
+var max_hp: int = 100
+var hp: int = 100
+var attack: int = 10
+var move_speed: float = 220.0
+
+func take_damage(amount: int) -> void:
+    hp = max(hp - amount, 0)
+    get_node("/root/Game/HUD/HPBar").value = hp
+    get_node("/root/Game/HUD/HPText").text = "%d / %d" % [hp, max_hp]
+
+    if hp == 0:
+        get_node("/root/Game").restart_level()
 ```
 
-它会在该脚本对应的类(可以是 `Node`、`Resource`、`RefCounted`)上注册一个同名信号。
+它有三个问题。
 
-**运行时形态**是 `Signal` 类型的对象。`my_button.pressed` 这个表达式,得到的是一个绑定了 `my_button` 和 `"pressed"` 的 `Signal` 值,你可以 `connect`、`disconnect`、`emit`、`is_connected`,甚至把它存进变量传给别处。
+第一,数据写死在脚本里。想做普通玩家、强化玩家、测试用无敌玩家,你只能改代码,或者复制脚本。
 
-连接信号的推荐姿势是用 `Callable`:
+第二,玩家直接改 HUD。玩家场景拿去另一个关卡,只要外层节点不是 `/root/Game/HUD`,代码就断。
 
-```gdscript
-player.died.connect(_on_player_died)
-player.hp_changed.connect(_on_hp_changed)
-button.pressed.connect(_on_pressed.bind(button.name))
+第三,玩家还知道“死亡后由 Game 重开关卡”。这不是玩家该知道的事。玩家只应该说“我死了”,至于重开、结算、播放动画,应该让关卡或流程管理器决定。
+
+更好的方向是:
+
+```text
+PlayerStats 记录血量、攻击力、速度
+Player 修改 PlayerStats
+PlayerStats 发出 hp_changed / died 信号
+HUD 监听 PlayerStats,自己刷新 UI
+Game 监听 died,自己决定怎么处理死亡
 ```
 
-Godot 4 完全废弃了 3.x 那种 `connect("died", self, "_on_player_died")` 的字符串方法名风格 —— 后者既不能被 IDE 校验,也不能在重命名函数时自动跟随。
+玩家不再找 HUD。HUD 也不需要找玩家。两边都看同一份数据,听同一个通知。
 
-连接时还可以传 `ConnectFlags`,常见的有三个:
+---
 
-- `CONNECT_ONE_SHOT`:触发一次后自动断开,适合"游戏开始动画播完一次后就别再听"这种场景。
-- `CONNECT_DEFERRED`:回调放进下一帧主循环执行,而不是立刻同步调。这在"信号在物理回调里发,但接收方想安全地修改场景树"时很关键 —— 物理过程中不能 `queue_free` / 添加子节点,延迟到下一帧就稳了。
-- `CONNECT_PERSIST`:与编辑器序列化相关,正常工程代码不需要主动设。
+## 二、Resource 是“可保存的数据对象”
 
-```gdscript
-boss.spawned.connect(_play_intro, CONNECT_ONE_SHOT)
-explosion.body_entered.connect(_apply_damage, CONNECT_DEFERRED)
-```
+`Resource` 不是节点,不会出现在场景树里。你可以把它理解成 Godot 里专门给编辑器、磁盘文件、Inspector 使用的数据对象。
 
-这两条标志几乎能解决"信号触发时机不对"的 80% 问题,后续第 08、09 篇会反复用到。
+贴图是 `Resource`,音频是 `Resource`,材质是 `Resource`,场景文件打包后也是 `PackedScene` 这种 `Resource`。我们自己也可以写资源类。
 
-### 信号的连接方式:代码连 vs 编辑器连
-
-Godot 编辑器右侧有个 "Node" 面板,可以可视化地把信号拖到接收节点上,自动生成回调函数。这种 GUI 连接对小项目方便,但有两个工程缺点:
-
-1. 连接关系藏在 `.tscn` 文件的 `[connection]` 段里,代码里看不到,审查代码时容易漏。
-2. 重命名信号名或回调名,GUI 连接不会跟着变,通常默默断掉。
-
-工程化项目的约定:**复杂或跨场景的连接,在脚本的 `_ready()` 里显式 `connect`**;**简单的、纯 UI 的本地连接,可以用编辑器面板,但要在脚本里写注释指明"该信号由编辑器连接"**。一致性比手段重要。
-
-### Unique Node IDs:打破"稳定路径"的旧习惯
-
-Godot 4.x 引入了 **Scene Unique Nodes** 特性,在编辑器里右键节点 -> "Access as Unique Name",节点名前会出现一个百分号(`%`)标记。之后在**同一场景**内的任何脚本里,可以用 `%NodeName` 短语法访问,无需关心它在树里挪到了哪里。
-
-```gdscript
-@onready var hp_bar: ProgressBar = %HPBar
-@onready var label: Label = %ScoreLabel
-```
-
-这看似只是语法糖,实质改变了"信号连接要走稳定路径"的旧建议。在 Godot 3.x 时代,你会被反复告诫"不要 `get_node` 太深,要写适应重构的相对路径";4.x 之后,只要给关键节点打 `%` 标记,无论你后续怎么重排父子层级,引用都不会断 —— `%` 路径在场景内做唯一名查找,不依赖具体层级。
-
-要注意三条边界:
-
-- `%` 查找只在**同一个场景文件内**生效。从 `player.tscn` 访问 `%HUDLabel` 拿不到外层关卡里的节点。
-- 同一个 owner 下不能有重名的 unique 节点,否则只有第一个有效。
-- `%X` 仍然是运行时查找,有少量哈希表开销,放在 `_process` 每帧调用不如缓存到 `@onready var x := %X` 一次。
-
-第 03 篇讲了节点生命周期与 `@onready` 的执行顺序,本篇把它们与 `%` 的组合作为推荐姿势固化下来:**所有跨子节点的引用,要么 `@export` 注入,要么 `@onready %`**,不再 `get_node("/root/...")`。
-
-## 3. 工程实现
-
-下面给一个最小但完整的 demo:玩家的血量数据放进 `Resource`,UI 通过信号订阅血量变化,玩家场景内部用 `%` 引用关键节点。
-
-**第一步:定义 `PlayerStats` 资源**
-
-文件路径 `res://player/player_stats.gd`:
+先写一份玩家参数:
 
 ```gdscript
 # res://player/player_stats.gd
 class_name PlayerStats
 extends Resource
 
-## 信号也可以挂在 Resource 上,而不只是 Node
-signal hp_changed(new_hp: int, max_hp: int)
+signal hp_changed(current: int, maximum: int)
 signal died
 
 @export var max_hp: int = 100:
     set(value):
         max_hp = maxi(value, 1)
-        ## 限幅一下,避免 hp > max_hp
         if hp > max_hp:
             hp = max_hp
 
 @export var hp: int = 100:
     set(value):
-        var clamped: int = clampi(value, 0, max_hp)
-        if clamped == hp:
+        var next_hp := clampi(value, 0, max_hp)
+        if next_hp == hp:
             return
-        hp = clamped
+
+        hp = next_hp
         hp_changed.emit(hp, max_hp)
+
         if hp == 0:
             died.emit()
 
@@ -166,30 +103,104 @@ signal died
 func take_damage(amount: int) -> void:
     if amount <= 0:
         return
-    hp = hp - amount   ## 触发 setter,自动发信号
+    hp -= amount
 ```
 
-`Resource` 上也能挂 `signal`,这是 4.x 的关键能力 —— 数据本身可以是事件源,UI 直接订阅数据,而不必经过中间层 Node。
+然后在 Godot 里右键目录:
 
-**第二步:在玩家场景里使用资源**
-
-场景结构(略写):
-
+```text
+New Resource -> PlayerStats -> 保存为 res://player/player_default.tres
 ```
+
+这个 `.tres` 文件就是一份可以被 Inspector 编辑、可以被 Git diff、可以拖给节点使用的数据。
+
+以后你要做不同版本的玩家,不必复制脚本:
+
+```text
+player_default.tres      hp 100, speed 220
+player_tank.tres         hp 200, speed 160
+player_debug.tres        hp 9999, speed 320
+```
+
+代码只认 `PlayerStats`,具体数值交给资源文件。
+
+---
+
+## 三、Signal 是“我发生了什么”
+
+信号不要理解成“远程调用函数”。它更像一句广播:
+
+```text
+我的血量变了
+我死了
+按钮被按了
+动画播完了
+敌人进入攻击范围了
+```
+
+发信号的一方不应该知道谁在听。
+
+这就是好处。`PlayerStats` 只负责发:
+
+```gdscript
+hp_changed.emit(hp, max_hp)
+died.emit()
+```
+
+HUD 可以听:
+
+```gdscript
+stats.hp_changed.connect(_on_hp_changed)
+```
+
+Game 也可以听:
+
+```gdscript
+stats.died.connect(_on_player_died)
+```
+
+以后你再加音效、震屏、成就系统,也只是多一个监听者。`PlayerStats` 不需要跟着改。
+
+在 Godot 4 里,信号连接推荐这样写:
+
+```gdscript
+button.pressed.connect(_on_button_pressed)
+stats.hp_changed.connect(_on_hp_changed)
+stats.died.connect(_on_died)
+```
+
+看到旧教程里这种写法:
+
+```gdscript
+connect("died", self, "_on_died")
+```
+
+直接换掉。字符串方法名不利于检查和重构,也是很多旧 Godot 教程最容易误导人的地方。
+
+---
+
+## 四、玩家只关心自己的事
+
+现在让玩家使用这份资源。
+
+场景大概长这样:
+
+```text
 Player (CharacterBody2D)
 ├── %Sprite (Sprite2D)
 ├── %HitBox (Area2D)
 └── %DebugLabel (Label)
 ```
 
-`%` 标记表示这三个节点都被注册为 unique。脚本 `res://player/player.gd`:
+`%Sprite` 里的 `%` 表示这个节点被设置为 Unique Name。它仍然在同一个场景里,但你不用再写长路径。
+
+玩家脚本:
 
 ```gdscript
 # res://player/player.gd
 class_name Player
 extends CharacterBody2D
 
-## 通过 @export 注入数据资源,可在 Inspector 拖入 .tres
 @export var stats: PlayerStats
 
 @onready var _sprite: Sprite2D = %Sprite
@@ -197,38 +208,43 @@ extends CharacterBody2D
 @onready var _debug_label: Label = %DebugLabel
 
 func _ready() -> void:
-    assert(stats != null, "Player.stats must be assigned in editor")
-    ## 订阅自身资源的信号
+    assert(stats != null, "Player.stats must be assigned")
+
     stats.hp_changed.connect(_on_hp_changed)
     stats.died.connect(_on_died)
     _hit_box.body_entered.connect(_on_hit_box_entered)
-    _refresh_label()
 
-func _on_hp_changed(new_hp: int, max_hp: int) -> void:
-    _refresh_label()
-    _sprite.modulate = Color(1, float(new_hp) / max_hp, float(new_hp) / max_hp)
-
-func _on_died() -> void:
-    _debug_label.text = "DEAD"
-    set_physics_process(false)
+    _refresh_debug_text()
 
 func _on_hit_box_entered(body: Node) -> void:
     if body.is_in_group(&"enemy"):
         stats.take_damage(10)
 
-func _refresh_label() -> void:
+func _on_hp_changed(_current: int, _maximum: int) -> void:
+    _refresh_debug_text()
+    _sprite.modulate = Color.RED
+
+func _on_died() -> void:
+    _debug_label.text = "DEAD"
+    set_physics_process(false)
+
+func _refresh_debug_text() -> void:
     _debug_label.text = "HP %d / %d" % [stats.hp, stats.max_hp]
 ```
 
-注意几个关键点:
+这里有几个重点。
 
-- 没有任何 `get_node("/root/...")`。
-- 没有手动写"找 HUD、找 HealthBar"的路径;HUD 完全不知道 Player 在哪里。
-- `stats` 是 `@export var stats: PlayerStats`,在编辑器里把 `player_default.tres` 拖进去即可。换一个 `.tres`(例如 `player_boss.tres`),整个玩家行为就变成"血更厚的版本",代码不动。
+`stats` 是 `@export`,所以从 Inspector 拖 `.tres` 进来。玩家不自己 `load()` 固定路径,这样同一个玩家场景可以换不同配置。
 
-**第三步:HUD 订阅同一份 `Resource`**
+`_sprite`、`_hit_box`、`_debug_label` 是场景内部节点,用 `%UniqueName` 缓存到 `@onready` 变量。以后你把 `HitBox` 挪到 `Body/HitBox`,只要还是同一个场景里的 unique 节点,脚本不用改。
 
-`res://ui/hud.gd`:
+玩家受伤以后,它只改 `stats`。血条、菜单、关卡流程不应该写在玩家脚本里。
+
+---
+
+## 五、HUD 不找玩家,只听数据
+
+HUD 也拿同一份 `PlayerStats`:
 
 ```gdscript
 # res://ui/hud.gd
@@ -237,173 +253,291 @@ extends CanvasLayer
 
 @export var stats: PlayerStats
 
-@onready var _bar: ProgressBar = %HPBar
+@onready var _hp_bar: ProgressBar = %HPBar
 @onready var _hp_text: Label = %HPText
 
 func _ready() -> void:
-    if stats == null:
-        push_warning("HUD.stats not assigned")
-        return
+    assert(stats != null, "HUD.stats must be assigned")
+
     stats.hp_changed.connect(_on_hp_changed)
     _refresh()
 
-func _on_hp_changed(_new_hp: int, _max_hp: int) -> void:
+func _on_hp_changed(_current: int, _maximum: int) -> void:
     _refresh()
 
 func _refresh() -> void:
-    _bar.max_value = stats.max_hp
-    _bar.value = stats.hp
+    _hp_bar.max_value = stats.max_hp
+    _hp_bar.value = stats.hp
     _hp_text.text = "%d / %d" % [stats.hp, stats.max_hp]
 ```
 
-把同一份 `player_default.tres` 同时拖给 `Player` 节点和 `HUD` 节点,运行时它们指向同一个 `Resource` 实例(因为 `Resource` 默认共享)。玩家受伤 -> `stats.hp -= 10` -> setter 触发 `hp_changed` -> Player 自己更新 modulate,HUD 同步刷新 ProgressBar。**两个节点完全不知道彼此存在**,只通过共享的资源建立了通讯。
-
-这就是 Godot 4.6 推荐的解耦姿势:**`Resource` 作为状态源,`Signal` 作为通知通道,`%UniqueName` 处理场景内节点引用,`@export` 处理跨场景注入**。第 17 篇会在此基础上扩展到生命/属性/技能的组件化系统。
-
-**关于 `.tres` 文件长什么样**
-
-`PlayerStats.tres` 在硬盘上是文本格式,大致如下:
+现在数据流很清楚:
 
 ```text
-[gd_resource type="Resource" script_class="PlayerStats" load_steps=2 format=3]
-
-[ext_resource type="Script" path="res://player/player_stats.gd" id="1"]
-
-[resource]
-script = ExtResource("1")
-max_hp = 100
-hp = 100
-attack = 10
-move_speed = 220.0
+敌人碰到 Player
+Player 调 stats.take_damage(10)
+PlayerStats 修改 hp
+PlayerStats 发 hp_changed
+HUD 收到信号,刷新血条
+Player 收到信号,刷新自身表现
 ```
 
-这种纯文本格式带来两个工程红利:**版本控制可读**(Git diff 能看清"哪个字段被改了"),**外部脚本可生成**(写一段 Python / GDScript 工具,从 CSV 或 Excel 自动生成几十份敌人配置文件,不必手点 Inspector)。这是 Godot 在策划协作上比 Unity 序列化二进制 `.asset` 更友好的部分。生产二进制版本 `.res` 一般只在导出包里使用 —— `ResourceSaver.save(res, path, ResourceSaver.FLAG_COMPRESS)` 可手动转,但开发阶段保持 `.tres` 文本。
+这套结构最重要的好处不是“高级”,而是“改得动”。
 
-## 4. 调参和验收
+你可以把 HUD 从 `Game/HUD` 挪到 `UIRoot/HUD`;可以把 Player 做成子场景;可以临时加一个 DebugPanel 也监听 `hp_changed`。只要都通过 `stats` 和信号沟通,大家不用互相知道路径。
 
-`Resource` 与 `Signal` 没有数值参数要调,真正的"调参"在于设计取舍。给一份判断表。
+---
 
-| 决策 | 选项 A | 选项 B | 取舍 |
-| --- | --- | --- | --- |
-| 数据放哪 | 写死在 `.gd` 脚本里 | 抽成 `Resource` 存 `.tres` | 同一类对象有多变体或要在 Inspector 调,就用 `Resource` |
-| 资源是否共享 | 默认共享(多个使用方同一实例) | `resource_local_to_scene = true` 每次场景实例化都克隆 | 模板配置用共享;运行时状态(当前 HP)用本地化 |
-| 信号挂在哪 | 节点上(`Node` 子类) | 资源上(`Resource` 子类) | 跨节点 / 跨场景的状态变化,信号挂资源;只与本节点行为相关的事件,挂节点 |
-| 引用方式 | `@export` 注入 | `%UniqueName` 查找 | 跨场景或跨实例的依赖用 `@export`;场景内的稳定子节点用 `%` |
-| 信号连接 | 编辑器面板拖线 | 脚本 `_ready` 里 `connect` | 团队协作 / 大项目优先脚本连接,可在版本控制里 diff |
+## 六、跨场景引用用 @export,场景内引用用 %
 
-**关于 `resource_local_to_scene` 的实操**
+Godot 里引用节点有很多写法,新手最容易混着用。先记这条简单规则:
 
-这是新手最容易踩的细节。如果你的 `PlayerStats.tres` 用 `@export` 注入到两个不同的 `Player` 场景实例(例如 1P / 2P),它们会**共享同一份 stats**。1P 掉血,2P 同步掉血。要让每个实例有独立状态,在 `.tres` 文件的 Inspector 里勾上 **Local To Scene**。或者代码层显式调 `stats = stats.duplicate(true)`(深拷贝)。
+> **同一个场景内部的固定子节点,用 `%UniqueName`;外部传进来的对象,用 `@export`。**
 
-**信号回路是放射状还是网状,要早点画清楚**
-
-把工程做到第 15 篇时,你会有几十个信号。判断"信号系统是否失控"的标准是:能否画一张 DAG(有向无环图)。如果出现 A -> B -> C -> A 的回路,或者 A 在收到信号回调里又发出会被 A 自己监听的信号,就要警惕。Godot 不会替你检测这种循环,运行起来可能死循环、可能栈溢出、可能"看起来正常但实际跑了两遍"。**好的工程实践:把信号当作"通知",回调里只更新本对象状态或转发给更内层,不反向发起会回到上游的信号链**。第 16 篇的事件总线就是为这种"非父子节点之间也要通讯"的场景准备的中转层。
-
-**验收清单**
-
-- [ ] 项目里有至少一个自定义 `Resource` 子类(例如 `EnemyStats` 或 `PlayerStats`),并保存了对应的 `.tres` 文件。
-- [ ] 同一份 `.tres` 在两个不同节点上被 `@export` 注入,数值变化能在两处同步。
-- [ ] `Player` 脚本里没有任何 `get_node("/root/...")`。
-- [ ] HUD 不通过 `find_child` / `get_parent().get_node` 找 Player,而是通过共享 `Resource` 或显式 `@export Player` 注入。
-- [ ] 至少 3 个关键节点(玩家 Sprite、HUD 容器、相机)被设为 `%UniqueName`,脚本里用 `%` 短语法访问。
-- [ ] 把场景树里某个子节点拖到另一个父节点下(例如 `%HitBox` 从 `Player` 移到 `Body/`),代码不需要修改,游戏能继续跑。
-
-最后一条是最有说服力的验收实验:**重组节点层级而代码不改**。这就是 Unique Node IDs + 信号解耦真正想交付的工程能力。
-
-## 5. 踩坑
-
-**坑 1:`@export var x: Resource` 比 `@export var x: PlayerStats` 弱很多**
-
-前者在 Inspector 里能接受任意 `Resource` 子类,IDE 也无法补全 `x.hp`。后者明确限制类型,接收方按 `PlayerStats` 来用,出错会被编辑器直接拒绝。原则:`@export` 的资源字段尽量标具体子类。
-
-**坑 2:`signal` 挂 `Resource` 上,要警惕"陈旧资源"**
-
-如果 `stats` 被某节点连了信号,然后你在 Inspector 里换成另一个 `.tres`,旧资源还在内存里;它的信号没人监听,看起来没事。但更危险的反向:你用 `stats = new_stats` 替换引用后,新 `stats` 上的 `hp_changed` 没人订阅。代码层要在 setter 里写"disconnect 旧的、connect 新的"逻辑,或者干脆把 stats 字段做成不可换。
-
-**坑 3:`Resource.duplicate()` 默认是浅拷贝**
-
-`stats.duplicate()` 只拷贝标量字段。如果 `PlayerStats` 里有 `Array[Resource]` 字段(例如装备列表),拷贝出来的副本和原对象**共享同一个数组**。要深拷贝写 `stats.duplicate(true)`,文档里 `subresources` 参数为真表示连同嵌套资源一起拷贝。
-
-**坑 4:Unique Name 范围只在"同一 owner 场景"**
-
-`%Hilt` 从 `Player` 场景里看不到 `Sword` 场景内部的 `Hilt`,即便 `Sword` 是 `Player` 的子场景。文档里把它叫 "Same-scene limitation"。要跨场景访问,要么走信号,要么把那个节点 `@export` 注入。
-
-**坑 5:信号在 `await` 之后可能源对象已经被释放**
+适合 `%UniqueName`:
 
 ```gdscript
-await player.died
-hud.show_game_over()    ## 这里 hud 可能已经因关卡卸载而无效
+@onready var _sprite: Sprite2D = %Sprite
+@onready var _hp_bar: ProgressBar = %HPBar
+@onready var _menu: Control = %PauseMenu
 ```
 
-`await` 一个信号,等于挂起当前函数直到信号发出。这期间任何对象都可能被释放。常用防御写法:
+这些节点属于当前场景,脚本和它们一起保存。
+
+适合 `@export`:
 
 ```gdscript
-await player.died
+@export var stats: PlayerStats
+@export var target: Node2D
+@export var bullet_scene: PackedScene
+@export var hit_sound: AudioStream
+```
+
+这些东西来自外部,应该由使用这个场景的人决定。
+
+不推荐长期使用:
+
+```gdscript
+get_node("/root/Game/HUD/HPBar")
+get_parent().get_parent().get_node("Player")
+find_child("ScoreLabel")
+```
+
+不是说这些函数永远不能用,而是它们把代码绑在场景结构上。项目越大,这种绑定越贵。
+
+---
+
+## 七、Resource 默认会共享
+
+这是 `Resource` 最容易踩的坑。
+
+如果两个玩家实例都拖了同一个 `player_default.tres`,默认情况下它们拿到的是同一份资源。也就是说:
+
+```text
+1P 掉血
+同一个 PlayerStats.hp 变了
+2P 也会看到血量变了
+```
+
+这不是 bug,这是 `Resource` 的默认行为。因为很多资源本来就应该共享,例如贴图、音频、敌人基础配置。
+
+判断方式很简单:
+
+```text
+这是模板配置吗? 共享没问题。
+这是运行时状态吗? 小心共享。
+```
+
+适合共享:
+
+```text
+敌人基础血量
+武器基础伤害
+技能冷却时间
+贴图、音效、字体
+```
+
+不适合共享:
+
+```text
+当前血量
+当前蓝量
+当前装备耐久
+本局随机出来的掉落结果
+```
+
+如果一份资源要跟着场景实例复制,可以在 Inspector 里打开 **Local To Scene**。更明确的做法是在运行时复制:
+
+```gdscript
+func _ready() -> void:
+    stats = stats.duplicate(true)
+```
+
+`true` 表示尽量做深拷贝。只写 `duplicate()` 是浅拷贝,嵌套的资源还可能共享。
+
+实际项目里常见做法是分两层:
+
+```text
+PlayerConfig: 共享模板,记录 max_hp / speed / attack
+PlayerState: 运行时状态,记录 current_hp / buffs / temporary_flags
+```
+
+前期可以先用一份 `PlayerStats` 跑通,但要知道共享这条边界。
+
+---
+
+## 八、信号连接放哪里
+
+Godot 编辑器可以在 Node 面板里拖信号,自动生成回调。小 Demo 这样做很快,但项目变大后有两个问题:
+
+```text
+连接关系藏在 .tscn 里,代码审查时不容易看到
+重命名函数或信号时,旧连接可能静悄悄断掉
+```
+
+建议:
+
+```text
+纯 UI、本场景内部、很简单的按钮事件:可以用编辑器连
+跨场景、核心玩法、会被多人维护的连接:在 _ready() 里用代码连
+```
+
+例如:
+
+```gdscript
+func _ready() -> void:
+    stats.hp_changed.connect(_on_hp_changed)
+    stats.died.connect(_on_died)
+    _start_button.pressed.connect(_on_start_button_pressed)
+```
+
+这样打开脚本就知道这个对象依赖什么事件。
+
+有些信号只想听一次:
+
+```gdscript
+animation_player.animation_finished.connect(_on_intro_finished, CONNECT_ONE_SHOT)
+```
+
+有些回调里会改场景树,可以延迟到下一帧:
+
+```gdscript
+area.body_entered.connect(_on_body_entered, CONNECT_DEFERRED)
+```
+
+不用一开始就背所有 flag。先记住两个:一次性用 `CONNECT_ONE_SHOT`,回调里要删节点或加节点时考虑 `CONNECT_DEFERRED`。
+
+---
+
+## 九、换资源时要重连信号
+
+还有一个真实项目里很常见的坑。
+
+如果 `stats` 一开始指向 A:
+
+```gdscript
+stats.hp_changed.connect(_on_hp_changed)
+```
+
+后来你把 `stats` 换成 B,A 的连接还在,B 还没连接。于是你改 B 的血量,HUD 没反应。
+
+需要支持运行时换资源时,给 `@export` 字段写 setter:
+
+```gdscript
+@export var stats: PlayerStats:
+    set(value):
+        if stats == value:
+            return
+
+        if stats != null and stats.hp_changed.is_connected(_on_hp_changed):
+            stats.hp_changed.disconnect(_on_hp_changed)
+
+        stats = value
+
+        if stats != null:
+            stats.hp_changed.connect(_on_hp_changed)
+
+        if is_node_ready():
+            _refresh()
+```
+
+`@export` 字段的 setter 可能在 `_ready()` 之前触发,所以刷新 UI、访问 `@onready` 节点时要先判断 `is_node_ready()`。
+
+如果你的项目里 `stats` 只在编辑器里设置一次,不会运行时替换,可以先不写这么复杂。但你要知道问题在哪里。
+
+---
+
+## 十、一个最小验收实验
+
+按下面的步骤做一遍,比看概念有用。
+
+1. 新建 `PlayerStats` 资源脚本。
+2. 保存两份资源:`player_default.tres` 和 `player_tank.tres`。
+3. `Player` 场景导出 `@export var stats: PlayerStats`。
+4. `HUD` 场景也导出同一个 `stats`。
+5. 让 `Player` 受伤时调用 `stats.take_damage(10)`。
+6. 让 `HUD` 监听 `stats.hp_changed`。
+7. 把 HUD 在场景树里换个位置,不改代码再跑一次。
+
+验收标准:
+
+- 玩家脚本里没有 `/root/Game/HUD` 这种路径。
+- HUD 脚本里没有 `get_parent().get_node("Player")`。
+- 换 `player_tank.tres` 后,玩家最大血量变化,脚本不需要改。
+- 移动 HUD 子节点位置后,`%HPBar` 仍然能找到。
+- 玩家死亡时,玩家只发出 `died`,不直接决定“重开关卡”。
+
+做到这些,第 05 篇的目标就达到了:节点之间不再互相乱找,数据和通知有了稳定入口。
+
+---
+
+## 常见坑
+
+**坑 1:`Resource` 不是“每个节点自动一份”。**
+
+同一个 `.tres` 被多个地方引用时,默认是同一份对象。模板可以共享,运行时状态要复制或 Local To Scene。
+
+**坑 2:`@export var stats: Resource` 太宽。**
+
+尽量写具体类型:
+
+```gdscript
+@export var stats: PlayerStats
+```
+
+这样 Inspector 会限制可拖入的资源类型,编辑器也能补全字段。
+
+**坑 3:`%UniqueName` 不能跨场景乱找。**
+
+`%HPBar` 只能找当前场景 owner 内的 unique 节点。想访问外部 HUD,用 `@export` 注入、信号、或者更高层管理器。
+
+**坑 4:信号回调里不要做太多“反向通知”。**
+
+如果 A 收到 B 的信号后又发信号让 B 改状态,很容易形成循环。回调里优先更新自己;复杂转发以后放到事件总线或流程管理器里处理。
+
+**坑 5:`await some_signal` 之后对象可能已经没了。**
+
+```gdscript
+await stats.died
 if not is_instance_valid(hud):
     return
 hud.show_game_over()
 ```
 
-**坑 6:`resource_local_to_scene` 不会自动深拷贝嵌套资源**
+`await` 期间场景可能切换,节点可能被释放。涉及 UI、关卡切换、过场动画时尤其要防。
 
-打开 Local To Scene 后,Godot 会在 `PackedScene.instantiate()` 时复制最外层资源,但内部引用的其他 `Resource` 字段仍然共享。需要每层都设 Local To Scene,或者在 `_setup_local_to_scene()` 里手动 `duplicate(true)`。文档示例:
+**坑 6:忘记给必须字段做检查。**
 
-```gdscript
-extends Resource
-var damage = 0
-func _setup_local_to_scene():
-    damage = randi_range(10, 40)
-```
-
-这段代码每次场景实例化都会被调一次,可以用来给每个副本生成独立的初始随机值。
-
-**坑 7:在 Inspector 里把 `.tres` 换了之后,信号连接不会自动迁移**
-
-如果你的脚本是 `stats.hp_changed.connect(_on_hp_changed)`,然后 Inspector 把 `stats` 换成新 `.tres`,新资源上还没接信号,但旧资源上的连接也还挂着(指向旧资源)。最佳实践:把 `stats` 字段做成带 setter,在 setter 里手动重连:
+`@export var stats: PlayerStats` 没拖资源时就是 `null`。在 `_ready()` 开头写:
 
 ```gdscript
-@export var stats: PlayerStats:
-    set(value):
-        if stats != null and stats.hp_changed.is_connected(_on_hp_changed):
-            stats.hp_changed.disconnect(_on_hp_changed)
-        stats = value
-        if stats != null:
-            stats.hp_changed.connect(_on_hp_changed)
+assert(stats != null, "stats must be assigned")
 ```
 
-**坑 8:`preload` vs `load` 的边界**
-
-`preload("res://foo.tres")` 在解析脚本时就把资源加载,常量级表达式,优势是确定性高、无运行时 IO。`load("res://foo.tres")` 是运行时调用,可以根据变量动态选择路径。规则很简单:**路径是字面量就 `preload`;路径要拼字符串就 `load`**。`preload` 会让脚本启动稍慢但跑得更稳。
-
-**坑 9:旧教程里的 `connect("died", self, "_on_died")` 语法在 4.x 完全失效**
-
-3.x 用"对象 + 方法名字符串"连接信号,4.x 全面切换到 `Callable`。看到老教程里的字符串方法名,直接替换成 `connect(_on_died)`(不带引号),否则会报错或行为异常。
-
-**坑 10:`Resource` 默认线程不安全**
-
-`Resource` 没有内置的锁。多个线程同时读写同一个 `Resource` 字段会出错。在主线程之外的代码(`WorkerThreadPool`、`Thread`)里只读用没问题;要写,要么自己加锁,要么把写操作 `call_deferred` 到主线程。本系列在第 24 篇异步加载里会重点讲这条边界,这里只是提醒别把"共享资源"当成"线程共享变量"。
-
-**坑 11:不要在 `signal` 回调里直接 `queue_free` 信号源**
-
-经典案例:`Area2D.body_entered` 触发的回调里,把自己 `queue_free()`。如果这个信号还有下一个监听者,引擎在调用它时会发现对象已无效,可能直接崩;即便没崩,行为也会变得不可预测。安全姿势:`call_deferred("queue_free")` 或者用 `CONNECT_DEFERRED` 把回调放到下一帧。
-
-**坑 12:`@export` 资源字段为 `null` 时不会抛错,需要 assert**
-
-`@export var stats: PlayerStats` 没在 Inspector 拖入资源,`stats` 就是 `null`,游戏照常启动,直到 `_on_hp_changed` 里第一次访问 `stats.hp` 才崩。约定:所有"必须设置"的 `@export` 字段,在 `_ready` 第一行写 `assert(field != null, "...")`。
+越早报错,越容易修。
 
 ---
 
-`Resource` 与 `Signal` 不是炫技语法,而是 Godot 工程化的两个支点。把它们守好,场景树就会从"什么都耦合在一起的网"变成"数据居中、节点周围、信号单向流动的图"。下一篇把视角从"数据 + 通讯"转到"运动 + 碰撞",讲清 `CharacterBody2D` 与 `move_and_slide` 的 4.6 心智 —— 包括一次必须澄清的物理引擎误会。
+`Resource` 和 `Signal` 不是为了让代码显得“架构化”。它们解决的是最朴素的问题:数据不要散在脚本里,节点不要到处找别的节点,发生变化时用通知说清楚。
 
-## 手动验证
-
-- [ ] 在项目里创建一份 `EnemyStats` 自定义资源,保存出 `goblin.tres` 与 `goblin_elite.tres` 两个变体,挂在同一个敌人脚本上,运行行为不同。
-- [ ] 同一份 `player_default.tres` 同时拖给 Player 与 HUD,玩家受伤后两边都能看到 hp 变化,且 Player 和 HUD 脚本里都没有 `get_node` 到对方。
-- [ ] 把 `%HPBar` 节点在 HUD 场景里从一个容器移到另一个容器,代码不改,游戏行为不变。
-- [ ] 故意在 Inspector 里把 `stats` 字段替换为新 `.tres`,验证 setter 触发了 disconnect / reconnect。
-- [ ] 打开某个资源的 **Local To Scene**,在两个独立的敌人实例上验证状态相互不影响。
-- [ ] 用 `await some_signal` 写一段流程,故意让源对象在 `await` 期间 `queue_free`,观察是否需要补 `is_instance_valid` 防御。
-
----
-
-**下一篇:** `06-CharacterBody2D与移动碰撞模型.md`,把"角色能动、能跳、能站在地上"这件事一次讲透,顺便澄清 4.6 Jolt 物理引擎与 2D 的关系。
+下一篇开始进入真正的手感核心:用 `CharacterBody2D` 讲清移动、碰撞、地面检测和 `move_and_slide()`。
