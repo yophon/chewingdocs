@@ -22,7 +22,7 @@
 | 操作系统 | 29 | [osLearning](osLearning/01-OS总览与心智.md) |
 | DevOps / SRE | 35 | [devopsLearning](devopsLearning/01-DevOps-SRE总览.md) |
 | 数据工程 | 33 | [dataEngineering](dataEngineering/01-数据工程总览.md) |
-| 算法 | 29 | [algorithmLearning](algorithmLearning/01-算法总览与工程师心智.md) |
+| 算法 | 34 | [algorithmLearning](algorithmLearning/01-算法总览与工程师心智.md) |
 | 程序员的数学 | 31 | [mathForCS](mathForCS/01-程序员的数学总览.md) |
 | Git | 23 | [gitLearning](gitLearning/01-Git总览与心智.md) |
 | 终端工程 | 31 | [terminalLearning](terminalLearning/01-终端工程总览.md) |
