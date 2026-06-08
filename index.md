@@ -30,7 +30,7 @@ features:
     details: 网络、操作系统、算法、程序员数学、Git、终端工程和安全心智。
     link: /networkLearning/01-网络学习路线总览
   - title: 工程专题
-    details: DevOps / SRE、数据工程、分布式系统、解释器、Go、Rust、Flutter、移动端等方向。
+    details: DevOps / SRE、数据工程、音视频工程、分布式系统、解释器、Go、Rust、Flutter、移动端等方向。
     link: /devopsLearning/01-DevOps-SRE总览
 ---
 
@@ -52,6 +52,7 @@ features:
 | 操作系统 | [osLearning](/osLearning/01-OS总览与心智) |
 | DevOps / SRE | [devopsLearning](/devopsLearning/01-DevOps-SRE总览) |
 | 数据工程 | [dataEngineering](/dataEngineering/01-数据工程总览) |
+| 音视频工程 | [mediaTechLearning](/mediaTechLearning/01-音视频工程总览与心智) |
 | 算法 | [algorithmLearning](/algorithmLearning/01-算法总览与工程师心智) |
 | 程序员的数学 | [mathForCS](/mathForCS/01-程序员的数学总览) |
 | Git | [gitLearning](/gitLearning/01-Git总览与心智) |

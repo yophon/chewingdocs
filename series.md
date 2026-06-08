@@ -26,6 +26,7 @@
 | 操作系统 | [OS总览与心智](/osLearning/01-OS总览与心智) |
 | DevOps / SRE | [DevOps-SRE总览](/devopsLearning/01-DevOps-SRE总览) |
 | 数据工程 | [数据工程总览](/dataEngineering/01-数据工程总览) |
+| 音视频工程 | [音视频工程总览与心智](/mediaTechLearning/01-音视频工程总览与心智) |
 | 算法 | [算法总览与工程师心智](/algorithmLearning/01-算法总览与工程师心智) |
 | 程序员的数学 | [程序员的数学总览](/mathForCS/01-程序员的数学总览) |
 | Git | [Git总览与心智](/gitLearning/01-Git总览与心智) |

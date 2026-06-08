@@ -11,6 +11,7 @@ export const series = [
   { text: "操作系统", dir: "osLearning" },
   { text: "DevOps / SRE", dir: "devopsLearning" },
   { text: "数据工程", dir: "dataEngineering" },
+  { text: "音视频工程", dir: "mediaTechLearning" },
   { text: "算法", dir: "algorithmLearning" },
   { text: "程序员的数学", dir: "mathForCS" },
   { text: "Git", dir: "gitLearning" },

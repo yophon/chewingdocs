@@ -2,7 +2,7 @@
 
 按主题整理的工程知识库。目标不是堆 API 手册，而是把工程师常用的知识拆成一组可连续阅读的系列：先建立心智模型，再进入工具、架构、排障、选型和真实工程取舍。
 
-当前内容覆盖 Web、AI、AI Infra、后端、系统设计、分布式、网络、操作系统、DevOps / SRE、数据工程、算法、程序员数学、Git、终端工程、Go、Rust、Flutter、Android、iOS、Godot、解释器、安全、Claude Code、设计模式、云服务等方向。
+当前内容覆盖 Web、AI、AI Infra、后端、系统设计、分布式、网络、操作系统、DevOps / SRE、数据工程、音视频工程、算法、程序员数学、Git、终端工程、Go、Rust、Flutter、Android、iOS、Godot、解释器、安全、Claude Code、设计模式、云服务等方向。
 
 在线阅读：<https://yophon.github.io/chewingdocs/>
 
@@ -26,6 +26,7 @@
 | 操作系统 | 28 | [osLearning](osLearning/01-OS总览与心智.md) |
 | DevOps / SRE | 34 | [devopsLearning](devopsLearning/01-DevOps-SRE总览.md) |
 | 数据工程 | 32 | [dataEngineering](dataEngineering/01-数据工程总览.md) |
+| 音视频工程 | 30 | [mediaTechLearning](mediaTechLearning/01-音视频工程总览与心智.md) |
 | 算法 | 33 | [algorithmLearning](algorithmLearning/01-算法总览与工程师心智.md) |
 | 程序员的数学 | 30 | [mathForCS](mathForCS/01-程序员的数学总览.md) |
 | Git | 22 | [gitLearning](gitLearning/01-Git总览与心智.md) |
