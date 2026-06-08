@@ -45,7 +45,7 @@
 
 [series-table:end]: #
 
-更多规划见：[未来系列规划](未来系列规划.md)。
+更多规划见：[未来系列规划](未来系列规划.md)。快变内容维护见：[版本复查清单](版本复查清单.md)。
 
 ## 推荐读法
 
@@ -81,5 +81,6 @@ npm run docs:check
 - 根目录下的 `*Learning/` 是各主题 Markdown 文档。
 - `docs/.vitepress/` 是 VitePress 配置目录。
 - `index.md`、`series.md` 和 `未来系列规划.md` 是站点顶层页面。
+- `版本复查清单.md` 记录快变系列的复查周期、官方来源和更新口径。
 - 系列章节导航由 VitePress sidebar 自动生成，不再维护单独的 `目录.md` 页面。
 - `docs/.vitepress/dist/` 是 VitePress 构建产物，不需要手动维护。

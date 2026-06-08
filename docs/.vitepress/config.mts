@@ -53,6 +53,7 @@ function nav(): DefaultTheme.NavItem[] {
   return [
     { text: "首页", link: "/" },
     { text: "学习系列", link: "/series" },
+    { text: "版本复查", link: "/版本复查清单" },
     {
       text: "主题",
       items: series.map(({ text, dir }) => ({
