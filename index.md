@@ -3,8 +3,8 @@ layout: home
 
 hero:
   name: chewingdocs
-  text: 技术学习文档库
-  tagline: 按主题整理的工程知识地图,从基础概念到系统设计、云服务、AI Infra 和真实工程判断。
+  text: 工程知识库
+  tagline: 按系列整理的技术学习地图,从基础心智到系统设计、AI Infra、云服务、排障和真实工程取舍。
   actions:
     - theme: brand
       text: 开始阅读
@@ -15,22 +15,22 @@ hero:
 
 features:
   - title: 云服务与互联网基础
-    details: DNS、CDN、HTTPS、Serverless、对象存储、监控、安全和计费常识。
+    details: 域名、DNS、HTTPS、CDN、反代、WAF、Serverless、对象存储、监控、安全和计费常识。
     link: /cloudBasicsLearning/01-云服务与互联网基础常识总览
   - title: 设计模式
     details: 从变化点、代码边界和工程代价理解 GoF、MVC、MVVM、DDD、微前端等模式。
     link: /designPatternLearning/01-设计模式总览
   - title: AI 与 AI Infra
-    details: 从 Transformer、Agent、RAG 到 GPU、推理引擎、并行训练和部署成本。
+    details: 从神经网络、Transformer、Agent、RAG 到 GPU、推理引擎、并行训练和部署成本。
     link: /aiLearning/01-AI学习路线总览
   - title: 后端与系统设计
     details: 后端框架、数据库、缓存、消息队列、高可用、容量估算和典型系统拆解。
     link: /backendLearning/01-后端学习路线总览
   - title: 基础能力
-    details: 网络、操作系统、算法、程序员数学、Git、终端工程和安全基础。
+    details: 网络、操作系统、算法、程序员数学、Git、终端工程和安全心智。
     link: /networkLearning/01-网络学习路线总览
   - title: 工程专题
-    details: DevOps / SRE、数据工程、分布式系统、解释器、Go、Rust、Flutter 等方向。
+    details: DevOps / SRE、数据工程、分布式系统、解释器、Go、Rust、Flutter、移动端等方向。
     link: /devopsLearning/01-DevOps-SRE总览
 ---
 

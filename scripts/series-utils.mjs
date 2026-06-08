@@ -49,7 +49,7 @@ export function firstReadableLink(dir, { extension = false, absolute = true } = 
 
 export function readmeSeriesRows() {
   return series.map(({ text, dir }) => {
-    const count = chapterFiles(dir, { includePlans: true }).length;
+    const count = chapterFiles(dir).length;
     return `| ${text} | ${count} | [${dir}](${firstReadableLink(dir, { extension: true, absolute: false })}) |`;
   });
 }

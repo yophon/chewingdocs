@@ -302,7 +302,7 @@ upstream timed out while connecting to 1.2.3.4
 
 项目代码或部署文件中可能写有源站地址：
 
-```env
+```ini
 ORIGIN_HOST=1.2.3.4
 API_BASE_URL=http://1.2.3.4:8080
 SSH_HOST=1.2.3.4

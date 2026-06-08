@@ -72,7 +72,7 @@ public interface IBinder {
 
 例子,AIDL 文件:
 
-```aidl
+```java
 // INoteService.aidl
 interface INoteService {
     void save(in Note note);
@@ -283,7 +283,7 @@ val cursor = ctx.contentResolver.query(
 
 默认 Binder 调用是**同步阻塞**——客户端等服务端处理完返回。`oneway` 让调用变异步:
 
-```aidl
+```java
 interface ILogger {
     oneway void log(String msg);
 }

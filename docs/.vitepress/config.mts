@@ -70,7 +70,7 @@ function escapeVueMustaches(html: string) {
 
 export default defineConfig({
   title: "chewingdocs",
-  description: "按主题整理的技术学习文档库",
+  description: "按系列整理的工程知识库",
   srcDir: "..",
   srcExclude: ["README.md", "**/目录.md", "docs/**", "site/**", "node_modules/**"],
   base: "/chewingdocs/",
