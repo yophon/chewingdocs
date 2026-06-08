@@ -305,7 +305,7 @@ const Button = styled.button`
 
 ---
 
-## 五、Vue / Angular / Svelte 的"自带方案"
+## 五、Vue / Svelte 的"自带方案"
 
 ### Vue:Single File Component 的 `<style scoped>`
 
@@ -321,18 +321,6 @@ const Button = styled.button`
 
 `scoped` 自动给类加属性选择器,**作用域限定在当前组件**。Vue 默认就有,不用配置。
 
-### Angular:每个组件天然 scoped
-
-```typescript
-@Component({
-  selector: 'my-button',
-  template: `<button class="btn">Click</button>`,
-  styles: [`.btn { padding: 8px; }`]
-})
-```
-
-Angular 用 Shadow DOM-like 模拟,**默认就是组件作用域**。
-
 ### Svelte:`<style>` 块自动 scoped
 
 ```svelte
@@ -345,7 +333,7 @@ Angular 用 Shadow DOM-like 模拟,**默认就是组件作用域**。
 
 跟 Vue 一样,**默认 scoped**。
 
-**结论**:Vue/Angular/Svelte 都自带组件级样式隔离,React 没有,所以要选额外方案。
+**结论**:Vue / Svelte 都自带组件级样式隔离,React 没有,所以要选额外方案。
 
 ---
 
@@ -405,9 +393,6 @@ document.documentElement.style.setProperty('--color-brand', '#10b981');
 新 Vue 项目
   └─ <style scoped> + CSS 变量,简单美好,Tailwind 也可加
 
-新 Angular 项目
-  └─ 自带组件样式 + Angular Material 或 PrimeNG
-
 旧项目接手
   └─ 保留现有方案(切换成本远大于收益)
 ```
@@ -465,7 +450,7 @@ CSS 方案的本质问题 = "怎么给 CSS 加边界"
 Tailwind        : 不写 CSS,用工具类拼,边界由"工具粒度"控制
 CSS Modules     : 文件级 hash,边界 = 文件
 styled-components: 组件级,边界 = 组件,但运行时
-Vue/Angular/Svelte: 自带组件级 scoped
+Vue/Svelte      : 自带组件级 scoped
 
 2025 React 默认搭配:
   Tailwind 4 + CVA + shadcn/ui + CSS 变量做主题

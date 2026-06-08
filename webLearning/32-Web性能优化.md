@@ -506,7 +506,7 @@ AWS CloudFront:贵但功能全
 
 ### 3. Service Worker(PWA)
 
-下一篇 41 详细讲。可以**完全离线 + 自定义缓存策略**。
+第 34 篇会详细讲。可以**完全离线 + 自定义缓存策略**。
 
 ### 4. HTTP 缓存策略
 
@@ -728,4 +728,4 @@ JS bundle (gzipped):
 - Chrome DevTools 文档:Performance / Lighthouse 面板教程
 - Patterns.dev:https://patterns.dev(渲染模式 + 性能模式)
 
-下一篇 40 讲实时通信:WebSocket 与 SSE。
+下一篇 33 讲实时通信:WebSocket 与 SSE。

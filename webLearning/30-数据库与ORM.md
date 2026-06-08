@@ -600,7 +600,7 @@ WHERE x IS NULL       -- ✅
 
 ### 9. 大表分页用 cursor
 
-见上一篇 36 第六节。
+见上一篇 29 第六节。
 
 ### 10. 大字段单独表
 
@@ -853,4 +853,4 @@ pg_dump $DB > backup.sql
 psql $DB < backup.sql
 ```
 
-下一篇 38 讲部署:Docker、GitHub Actions、Vercel/Cloudflare。
+下一篇 31 讲部署:Docker、GitHub Actions、Vercel/Cloudflare。

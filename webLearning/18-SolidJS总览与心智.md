@@ -30,12 +30,11 @@ function Counter() {
 
 ---
 
-## 二、和四大框架的对比
+## 二、和主流框架的对比
 
 ```
 React  : 函数每次重跑 → VDOM diff → 更新 DOM
 Vue    : 模板编译 + setup 只跑一次 + VDOM diff(组件粒度)
-Angular: 类 + 装饰器 + Zone.js 或 Signals
 SolidJS: 函数只跑一次 + Signal 直接绑 DOM 节点(无 VDOM)
 ```
 
@@ -142,7 +141,6 @@ js-framework-benchmark(选取):
   Solid        ~1.0x  (接近原生 JS)
   Vue          ~1.3x
   React        ~1.5x
-  Angular      ~1.4x
 ```
 
 生产中差距没这么大——但 Solid 的优势在**复杂 UI + 高频更新**时(实时数据、大量交互)最明显。
@@ -231,4 +229,4 @@ SolidJS 的三个核心规则:
 记住:"长得像 React,但不是 React"
 ```
 
-下一篇 26 讲 Signals 与细粒度响应式——SolidJS 响应式系统的全貌。
+下一篇 19 讲 Signals 与细粒度响应式——SolidJS 响应式系统的全貌。

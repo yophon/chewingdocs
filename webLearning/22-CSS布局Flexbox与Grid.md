@@ -503,7 +503,7 @@ grid-template-columns: repeat(3, 1fr)  →  grid-cols-3
 grid-column: span 2        →  col-span-2
 ```
 
-下一篇 30 详细讲 Tailwind / CSS Modules / styled-components。
+下一篇 23 详细讲 Tailwind / CSS Modules / styled-components。
 
 ---
 

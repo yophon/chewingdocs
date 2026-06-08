@@ -632,7 +632,7 @@ app.get('/health', (c) => c.json({
 
 关键:
   - 每次 build 打 git sha 的 tag,能精确回到任意版本
-  - 数据库迁移要可回滚(或向前兼容,见 37 篇)
+  - 数据库迁移要可回滚(或向前兼容,见 30 篇)
   - 部署后保留旧版本一段时间(至少 24h)
 ```
 
@@ -791,4 +791,4 @@ dig your-domain.com
 curl -I https://your-domain.com
 ```
 
-下一篇 39 进入第三层:Web 性能优化(Web Vitals、代码分割、懒加载、渲染管线)。
+下一篇 32 进入浏览器与生产能力:Web 性能优化(Web Vitals、代码分割、懒加载、渲染管线)。

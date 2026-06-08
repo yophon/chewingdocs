@@ -649,4 +649,4 @@ P2P,**客户端直连客户端**(中间靠信令服务器牵线)。
 - Liveblocks(托管协同):https://liveblocks.io
 - Partykit(WebSocket on Cloudflare):https://www.partykit.io
 
-下一篇 41 讲 PWA 与 Service Worker。
+下一篇 34 讲 PWA 与 Service Worker。

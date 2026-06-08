@@ -1,6 +1,6 @@
 # Web Components
 
-Web Components = **浏览器原生组件标准**。不依赖任何框架,**写一次到处用**(React / Vue / Angular / 原生 HTML 都能用)。
+Web Components = **浏览器原生组件标准**。不依赖任何框架,**写一次到处用**(React / Vue / 原生 HTML 都能用)。
 
 ```
 Custom Elements    自定义标签 <my-button>
@@ -16,7 +16,7 @@ ES Modules         JS 模块化
 ## 一、为什么有 Web Components
 
 ```
-React / Vue / Angular 各写一套组件库
+React / Vue 各写一套组件库
   → 换框架时全部重写
   → A 公司用 React,B 公司用 Vue,组件无法共享
 
@@ -301,7 +301,7 @@ export class MyButton {
 
 特点:
 - 像 React 写法 + 装饰器
-- 编译时生成框架适配器(React / Vue / Angular 都能用)
+- 编译时生成框架适配器(React / Vue 等都能用)
 - 适合做组件库
 
 ### 3. SolidJS / Svelte 也能编译到 Web Components
@@ -354,20 +354,6 @@ function App() {
 ```
 
 Vue 自动处理 property / attribute,**最好的兼容性**。
-
-### 3. 在 Angular 里用
-
-```ts
-@NgModule({
-  schemas: [CUSTOM_ELEMENTS_SCHEMA]    // 必加,告诉 Angular 别检查这个标签
-})
-```
-
-```html
-<my-counter [count]="num" (myEvent)="onEvent($event)"></my-counter>
-```
-
----
 
 ## 七、自定义事件
 
@@ -534,7 +520,7 @@ Web Components 四件套:
 
 定位:
   跨框架共享组件 = WC 的杀手锏
-  普通应用开发 = 还是用 React / Vue / Angular / Solid
+  普通应用开发 = 还是用 React / Vue / Solid
 ```
 
 ---
@@ -546,7 +532,7 @@ Web Components 四件套:
 1. **跑通 Lit 官方 tutorial**(30 分钟):https://lit.dev/tutorials
 2. **写一个 `<my-button>`**,放进现有 React/Vue 项目用
 3. 看 Shoelace 源码,学组件库实战
-4. 微前端场景再深入(下一篇 45 微前端)
+4. 微前端场景再深入(下一篇 38 微前端)
 
 如果只是了解:这一篇 + 知道 WC 存在,需要时再回来。
 
@@ -560,4 +546,4 @@ Web Components 四件套:
 - open-wc:https://open-wc.org(WC 最佳实践)
 - custom-elements-everywhere:https://custom-elements-everywhere.com(各框架兼容性)
 
-下一篇 45 讲微前端架构(Module Federation)。
+下一篇 38 讲微前端架构(Module Federation)。

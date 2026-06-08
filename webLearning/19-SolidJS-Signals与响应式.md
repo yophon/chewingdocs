@@ -131,7 +131,7 @@ Memo 的特点:
 
 ### Memo vs computed
 
-SolidJS 的 `createMemo` ≈ Vue 的 `computed` ≈ Angular 的 `computed()`。
+SolidJS 的 `createMemo` ≈ Vue 的 `computed`。它们都表示"由响应式数据派生出来的缓存值"。
 
 ---
 
@@ -357,4 +357,4 @@ createResource → 异步状态(数据获取)
   组件不重跑 → 没有 React 的闭包/依赖数组问题
 ```
 
-下一篇 27 讲 SolidJS Stores、Effects 进阶和 Memos——更复杂的响应式模式。
+下一篇 20 讲 SolidJS Stores、Effects 进阶和 Memos——更复杂的响应式模式。

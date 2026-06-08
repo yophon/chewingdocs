@@ -17,7 +17,7 @@
 | AI 学习 | [AI学习路线总览](/aiLearning/01-AI学习路线总览) |
 | AI Infra | [AI工程链总览](/aiInfraLearning/01-AI工程链总览) |
 | 后端学习 | [后端学习路线总览](/backendLearning/01-后端学习路线总览) |
-| 前端学习 | [四大框架总览](/webLearning/01-四大框架总览) |
+| 前端学习 | [前端学习路线总览](/webLearning/01-前端学习路线总览) |
 | 设计模式 | [设计模式总览](/designPatternLearning/01-设计模式总览) |
 | 云服务与互联网基础常识 | [云服务与互联网基础常识总览](/cloudBasicsLearning/01-云服务与互联网基础常识总览) |
 | 系统设计 | [系统设计总览](/systemDesign/01-系统设计总览) |

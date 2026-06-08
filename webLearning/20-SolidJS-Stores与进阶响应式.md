@@ -470,4 +470,4 @@ Effect vs Memo:
   跨组件共享:createStore 导出 + store 对象
 ```
 
-下一篇 28 讲 SolidStart——SolidJS 的全栈框架,类比 Next.js / Nuxt。
+下一篇 21 讲 SolidStart——SolidJS 的全栈框架,类比 Next.js / Nuxt。

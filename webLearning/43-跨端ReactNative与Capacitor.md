@@ -378,7 +378,7 @@ eas update          # OTA 更新(JS bundle 不用过审)
 ### 1. 心智
 
 ```
-你的现有 Web 应用(React/Vue/Angular/Svelte/Vanilla)
+你的现有 Web 应用(React/Vue/Svelte/Vanilla)
 + 一个 iOS/Android 原生工程
 = Capacitor
 
@@ -389,7 +389,7 @@ WebView 加载你的 Web 资源,用 plugin 桥接原生 API。
 
 ### 2. 第一步
 
-已有 Vue / React / Angular Web 项目:
+已有 Vue / React Web 项目:
 
 ```bash
 pnpm add @capacitor/core
@@ -489,7 +489,7 @@ Capacitor 项目天然能同时是 PWA(41 篇)。**一份代码 → Web / iOS / 
 
 - WebView 性能比原生组件差(滚动 / 动画明显)
 - iOS WKWebView / Android WebView 已经很好了,普通 SaaS 用户感知不强
-- 复杂动画 / 列表用 transform、IntersectionObserver、虚拟滚动(39 / 42 篇)
+- 复杂动画 / 列表用 transform、IntersectionObserver、虚拟滚动(32 / 35 篇)
 
 ### 8. 调试
 
@@ -540,7 +540,7 @@ RN 的"全家桶":Build + 路由 + Push + OTA + UI 库
 ### NativeScript
 
 ```
-也是渲染原生组件,但用 Vue / Angular / Svelte
+也是渲染原生组件,但用 Vue / Svelte
 比 RN 小众,2024 仍维护
 ```
 
@@ -747,19 +747,18 @@ Expo Router 内置支持,URL 直接对应路由。
 
 ---
 
-## 全 50 篇完结
+## 全 43 篇完结
 
-恭喜!Web Learning 系列**全部 50 篇**完工,覆盖一个 2025 现代 Web 工程师的完整知识图:
+Web Learning 系列**全部 43 篇**完工,覆盖一个现代 Web 工程师的完整知识图:
 
 ```
 01-10  React 系列
 11-17  Vue 系列
-18-24  Angular 系列
-25-28  SolidJS 系列
-29-32  基础(CSS / TS / JS 异步)
-33-38  工程化(构建 / 测试 / 安全 / 后端 / 数据库 / 部署)
-39-42  进阶(性能 / 实时 / PWA / 渲染原理)
-43-50  专题(Wasm / Web Components / 微前端 / 图形 / a11y / i18n / 桌面 / 跨端)
+18-21  SolidJS 系列
+22-25  基础(CSS / TS / JS 异步)
+26-31  工程化(构建 / 测试 / 安全 / 后端 / 数据库 / 部署)
+32-35  浏览器能力(性能 / 实时 / PWA / 渲染原理)
+36-43  专题(Wasm / Web Components / 微前端 / 图形 / a11y / i18n / 桌面 / 跨端)
 ```
 
 下一步还是那句话:**做项目 > 看文档**。这套笔记是你随时回来翻的字典,真正的成长来自动手。

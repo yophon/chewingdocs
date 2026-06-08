@@ -752,4 +752,4 @@ SEO:useHead / useSeoMeta
 
 学完这套,任何 Vue 项目你都能从零搭起来。
 
-下一系列将进入 **Angular**——同样的问题,**OOP + 强约束 + RxJS** 的解题思路。换种风格的体验。
+下一篇进入 **SolidJS**。它长得像 React,但用 Signals 做细粒度响应式,适合拿来反向理解 React 和 Vue 的更新模型。

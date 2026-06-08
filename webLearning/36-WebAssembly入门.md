@@ -425,4 +425,4 @@ JS ←→ Wasm 关系:
 - ffmpeg.wasm:https://ffmpegwasm.netlify.app
 - sqlite.org wasm:https://sqlite.org/wasm/
 
-下一篇 44 讲 Web Components(浏览器原生组件标准)。
+下一篇 37 讲 Web Components(浏览器原生组件标准)。

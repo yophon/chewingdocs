@@ -395,7 +395,7 @@ Tauri 的 Go 版本。Go 团队适合。
 
 ### Capacitor(Ionic)
 
-主要做移动端,但也能做桌面。下一篇 50 讲。
+主要做移动端,但也能做桌面。下一篇 43 讲。
 
 ---
 
@@ -637,4 +637,4 @@ Tauri(系统 WebView + Rust):
 - Awesome Electron:https://github.com/sindresorhus/awesome-electron
 - Awesome Tauri:https://github.com/tauri-apps/awesome-tauri
 
-下一篇 50 讲跨端:React Native 与 Capacitor。
+下一篇 43 讲跨端:React Native 与 Capacitor。

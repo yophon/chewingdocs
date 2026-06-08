@@ -382,4 +382,4 @@ SolidStart = SolidJS + 文件路由 + 服务端函数 + SSR
   SolidStart → Solid,最小包体,响应式统一
 ```
 
-SolidJS 系列到这里结束。下一篇将做四大框架的横向总结对比。
+SolidJS 系列到这里结束。下一篇进入 CSS 布局,从框架心智切回前端基础能力。

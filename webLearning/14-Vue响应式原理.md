@@ -365,7 +365,7 @@ watchEffect(() => console.log(count.value));
 
 **SolidJS 比 Vue 快**(无 VDOM 开销),但生态小很多。Vue 的"组件粒度 + 静态提升 + 编译器优化"在实战中也极快。
 
-详细 SolidJS 见 27-30 篇。
+详细 SolidJS 见 18-21 篇。
 
 ---
 

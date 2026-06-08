@@ -43,7 +43,7 @@ features:
 | AI 学习 | [aiLearning](/aiLearning/01-AI学习路线总览) |
 | AI Infra | [aiInfraLearning](/aiInfraLearning/01-AI工程链总览) |
 | 后端学习 | [backendLearning](/backendLearning/01-后端学习路线总览) |
-| 前端学习 | [webLearning](/webLearning/01-四大框架总览) |
+| 前端学习 | [webLearning](/webLearning/01-前端学习路线总览) |
 | 设计模式 | [designPatternLearning](/designPatternLearning/01-设计模式总览) |
 | 云服务与互联网基础常识 | [cloudBasicsLearning](/cloudBasicsLearning/01-云服务与互联网基础常识总览) |
 | 系统设计 | [systemDesign](/systemDesign/01-系统设计总览) |
