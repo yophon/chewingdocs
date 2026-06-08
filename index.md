@@ -59,6 +59,7 @@ features:
 | 终端工程 | [terminalLearning](/terminalLearning/01-终端工程总览) |
 | Go | [goLearning](/goLearning/01-Go学习路线总览) |
 | Rust | [rustLearning](/rustLearning/01-Rust学习路线总览) |
+| 移动端通用知识 | [mobileCommonLearning](/mobileCommonLearning/01-移动端通用知识总览) |
 | Flutter | [flutterLearning](/flutterLearning/01-状态管理总览) |
 | Android 原生开发 | [androidNativeLearning](/androidNativeLearning/01-现代Android的一棵树) |
 | Android 平台基础 | [androidPlatformLearning](/androidPlatformLearning/01-Android的世界观) |

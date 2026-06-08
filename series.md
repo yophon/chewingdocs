@@ -33,6 +33,7 @@
 | 终端工程 | [终端工程总览](/terminalLearning/01-终端工程总览) |
 | Go | [Go学习路线总览](/goLearning/01-Go学习路线总览) |
 | Rust | [Rust学习路线总览](/rustLearning/01-Rust学习路线总览) |
+| 移动端通用知识 | [移动端通用知识总览](/mobileCommonLearning/01-移动端通用知识总览) |
 | Flutter | [状态管理总览](/flutterLearning/01-状态管理总览) |
 | Android 原生开发 | [现代Android的一棵树](/androidNativeLearning/01-现代Android的一棵树) |
 | Android 平台基础 | [Android的世界观](/androidPlatformLearning/01-Android的世界观) |

@@ -18,6 +18,7 @@ export const series = [
   { text: "终端工程", dir: "terminalLearning" },
   { text: "Go", dir: "goLearning" },
   { text: "Rust", dir: "rustLearning" },
+  { text: "移动端通用知识", dir: "mobileCommonLearning" },
   { text: "Flutter", dir: "flutterLearning" },
   { text: "Android 原生开发", dir: "androidNativeLearning" },
   { text: "Android 平台基础", dir: "androidPlatformLearning" },
