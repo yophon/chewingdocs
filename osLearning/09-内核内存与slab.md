@@ -1,466 +1,287 @@
 # 内核内存与 slab
 
-讲完了用户态的 malloc,**该看内核自己怎么管理内存了**。内核的需求和用户态完全不同——内核要分配 `task_struct`(每个进程一个,几 KB)、`inode`(文件系统元数据)、`socket buffer` 等等,**这些都是固定大小的小对象,且分配频率极高**(每次 fork、每次打开文件、每次新连接)。普通的 malloc 在内核场景下太慢。这一篇讲内核内存的两层结构:**buddy 分配器(管物理页)** 和 **slab/slub(管小对象)**,以及为什么 `slabtop` 是内核内存调优的必备工具。
+新手看 `free -h` 最常见的惊吓:16GB 的机器,`free` 只剩 500MB——"内存被谁吃光了?!"然后慌忙重启服务,甚至有人写了定时清缓存的 cron。这都是冤案:**那 11GB 的 buff/cache 不是被吃了,是 Linux 拿空闲内存做了缓存,你的程序要用时它随时让出来**。要看懂这笔账,你得知道内核自己是怎么管内存的——它不能用 malloc(它自己就是 malloc 的底座),它有自己的两层体系:**buddy 管物理页,slab 管小对象**。每次 fork、每次 open、每个新连接,背后都是这套体系在毫秒间分配 task_struct、inode、socket buffer。这一篇把内核这本账讲清楚。
 
-> 一句话先记住:**内核内存 = "buddy 管页 + slab 管对象"** 的两层结构。**buddy 按 2 的幂大小分配物理页**(4 KB / 8 KB / ... / 4 MB),解决"有连续物理页可分"的问题;**slab 在 buddy 上面切对象**,**对每种内核数据结构(`task_struct` / `inode` / `dentry`)预分配 cache**,分配几乎零成本。**slab 是"为什么 Linux 能撑百万 socket"的底层关键**——没有它,内核自己就被自己拖死。
+> 一句话先记住:**内核内存 = buddy(按 2 的幂分配物理页)+ slab(在页上为每种内核对象切好"专用货架")**,而剩下的空闲内存几乎全被拿去做 **page cache**——所以**看可用内存要看 available,不是 free**。slab 让 task_struct / inode 这类高频小对象的分配接近零成本,**这是 Linux 能扛住每秒十万级 fork / open / accept 的底层原因**。
 
 ---
 
-## 一、内核为什么不能用普通 malloc
+## 一、内核为什么不能用 malloc
 
-### 1.1 三个根本约束
+用户态的 malloc 那么成熟,内核抄一份不行吗?不行,内核面对三条用户态没有的死规矩:
 
 ```
 1. 内核不能缺页
-   - 用户态访问没分的虚拟内存 → 缺页 → 内核帮你处理
-   - 内核自己缺页 → 谁来处理?直接死锁
-   → 内核分配的内存必须立刻有物理页
+   用户态访问没分配的页 → 缺页中断 → 内核来兜底
+   内核自己缺页 → 谁兜底?没人,直接死锁/崩溃
+   → 内核分到的内存必须立刻有物理页,不能玩"先记账后给钱"
 
 2. 中断上下文不能睡眠
-   - malloc 内部可能等内存(等待 page reclaim)
-   - 中断处理函数不能等任何东西
-   → 内核的"原子分配"不能阻塞
+   malloc 内部可能等内存回收(等就是睡眠)
+   中断处理函数绝不能睡
+   → 必须提供"原子分配":要么立刻给,要么立刻失败
 
-3. 物理连续性
-   - DMA 设备直接访问物理内存,要求连续
-   - kmalloc 必须返回物理连续内存
-   → 不能有碎片
+3. DMA 要求物理连续
+   网卡/磁盘控制器直接往物理内存写,不经过 MMU
+   → 给设备的缓冲区必须物理连续,虚拟连续没用
 ```
 
-### 1.2 内核内存的两层
+所以内核自己搭了一套,分两层:
 
 ```
 ┌─────────────────────────────┐
-│   slab / slub               │ ← 切小对象给内核数据结构
-│   (kmalloc, kmem_cache_*)   │
+│  slab / slub                │ ← 在页上切小对象(kmalloc、kmem_cache_*)
 ├─────────────────────────────┤
-│   buddy allocator           │ ← 管理物理页(4KB / 8KB / 16KB / ...)
-│   (alloc_pages)             │
+│  buddy allocator            │ ← 管物理页(alloc_pages)
 ├─────────────────────────────┤
-│   物理内存                   │
+│  物理内存                    │
 └─────────────────────────────┘
 ```
 
+眼熟吗?**和用户态"glibc 切小块 / 内核批发大块"是同一个思想**——批发零售两级结构,只是这次批发商是 buddy,零售商是 slab。
+
 ---
 
-## 二、buddy 分配器:按 2 的幂分配
+## 二、buddy 分配器:用 2 的幂驯服碎片
 
-### 2.1 思想
-
-把**物理内存按 2 的幂分块**:
+buddy 把物理内存按 2 的幂分块,每档(order)各维护一条空闲链表:
 
 ```
-order 0:  1 页 (4 KB)
-order 1:  2 页 (8 KB)
-order 2:  4 页 (16 KB)
+order 0:  1 页 = 4KB      free list: [页A] → [页B] → ...
+order 1:  2 页 = 8KB      free list: [页对] → ...
+order 2:  4 页 = 16KB
 ...
-order 10: 1024 页 (4 MB)
+order 10: 1024 页 = 4MB   ← kmalloc 的天花板就来自这
 ```
 
-每个 order 维护一个 free list:
+**分配**:要 8KB → 找 order 1 的链表;空了就去拆一个 order 2 的块,劈成两半,用一半挂一半。
 
-```
-order 0 free list: [page A] → [page B] → ...
-order 1 free list: [pair AB] → ...
-...
-```
+**释放**:还 order 1 的块时,看它的"伙伴(buddy)"——同 order、地址相邻、合起来正好是一个 order 2 块的那一半——是否也空闲。**空闲就合并成 order 2,然后递归向上继续试合并**。
 
-### 2.2 分配 / 释放
+为什么死磕 2 的幂?三个理由:**伙伴好找**(伙伴的地址和自己只差一个 bit,异或一下就出来)、**碎片可控**(小块总有机会合回大块)、**分配快**(O(log n) 定位档位)。
 
-**分配**:
-
-```
-要 8 KB → order 1
-order 1 list 有空闲 → 取一对页
-没空闲 → 拆 order 2 的一对(分裂成两对 order 1,用一对)
-```
-
-**释放**:
-
-```
-还 order 1 → 看伙伴(buddy)是否也空闲
-是 → 合并成 order 2 → 继续看 order 2 的伙伴
-否 → 直接放 order 1 list
-```
-
-**伙伴的定义**:同 order、地址连续、可合并的那一对。
-
-### 2.3 为什么是 2 的幂
-
-- **合并简单**:伙伴地址只差 1 个 bit
-- **碎片可控**:总能合并,大块容易凑出来
-- **分配快**:O(log n) 找到合适大小
-
-### 2.4 看 buddy 状态
+观测:
 
 ```bash
 cat /proc/buddyinfo
 # Node 0, zone   Normal   100  50  20  10  5  2  1  0  0  0  0
-#                         o0  o1  o2 ...                    o10
+#                          o0  o1  o2  o3 ...              o10
 ```
 
-每个数字 = 该 order 的空闲块数。**高 order 全是 0 = 没有大块连续内存了**(碎片化严重)。
-
-**坑**:**高 PPS 网卡需要分配大块连续内存(16+ 页)** —— 内存碎片化时分配失败,网卡掉包。
+每个数字是该 order 的空闲块数。**右边高 order 全是 0 = 系统已经凑不出大块连续物理内存了**。这不是理论问题——高 PPS 场景网卡驱动要分配多页连续缓冲,碎片化的机器上分配失败,**表现就是莫名其妙的丢包**。
 
 ---
 
-## 三、slab / slub:小对象的"高速 cache"
+## 三、slab:给每种内核对象开"专用货架"
 
-### 3.1 问题
+### 3.1 没有 slab 的世界
+
+内核的分配负载长这样:
 
 ```
-内核每秒可能:
-  fork 100 次 → 100 个 task_struct(每个 ~2KB)
-  open 1000 次 → 1000 个 file 结构 / inode / dentry
-  accept 10 万次 → 10 万个 sock 结构
-
-如果每次都走 buddy 分配 4 KB 页 → 浪费 + 慢
+每秒 fork 100 次     → 100 个 task_struct(每个约 2KB)
+每秒 open 1000 次    → 1000 组 file / inode / dentry
+每秒 accept 10 万次  → 10 万个 sock 结构
 ```
 
-### 3.2 slab 的解法
+全是**固定大小、生灭极快**的小对象。每次都找 buddy 拿一整页?2KB 的对象占 4KB 的页,浪费一半;而且分配路径太长,扛不住这个频率。
 
-**为每种对象类型,维护一个 cache**:
+### 3.2 slab 的解法:按类型预制
+
+**为每种内核数据结构维护一个专属 cache**:
 
 ```
 task_struct cache:
-  从 buddy 一次拿 1 页
-  一页能装 ~2 个 task_struct
-  分配:从 cache 拿一个,O(1)
-  释放:还回 cache,O(1)
-  cache 用完 → 再从 buddy 拿一页
+  从 buddy 批发一页,预先划成 N 个 task_struct 大小的格子
+  分配:从格子里拿一个,O(1)
+  释放:放回格子,O(1)(连初始化都能省——格子里留着上次的构造状态)
+  格子用完 → 再找 buddy 批发一页
 
-inode cache:
-  独立的 cache,装 inode 大小的对象
-  ...
+inode cache、dentry cache、sock cache……每种对象一套
 ```
 
-**所有内核对象都有自己的 cache**——这就是 slab。
+这就是 slab。**fork / open / accept 的内存分配被压到近乎零成本,Linux 能撑百万级 socket,这是底层支柱之一**。
 
-### 3.3 三个版本
-
-```
-slab:    最早的实现,Solaris 来的
-slub:    Linux 默认,简化 slab,性能更好
-slob:    嵌入式简化版,小内存友好
-```
-
-> 现代 Linux 默认 slub,但**所有人都管它叫 slab**(代码里也是 `kmem_cache_*`)。
-
-### 3.4 看 slab 使用
-
-```bash
-slabtop
-# Active / Total Objects (% used)    : 1234567 / 2345678 (52.6%)
-# Active / Total Slabs (% used)      : 12345 / 12345 (100.0%)
-# Active / Total Caches (% used)     : 100 / 150 (66.7%)
-# Active / Total Size (% used)       : 500MB / 800MB (62.5%)
-#
-#  OBJS ACTIVE  USE OBJ SIZE  SLABS  OBJ/SLAB CACHE SIZE NAME
-# 100000  90000  90%  256.0K   100      1   24.4MB  task_struct
-# 200000 180000  90%  192.0K   200      1   38.4MB  inode_cache
-# ...
-```
-
-**用途**:
-
-- 看哪个内核对象占内存最多
-- 排查"内核内存涨"的问题
-- 调 `vm.vfs_cache_pressure` 控制 inode/dentry 缓存
-
-### 3.5 创建自己的 slab cache(内核模块开发)
+历史上有三个实现:`slab`(初版,思想来自 Solaris)、`slub`(现在的 Linux 默认,更简洁更快)、`slob`(嵌入式小内存版)。**现在跑的都是 slub,但所有人嘴上还是叫 slab**,内核 API 也还是 `kmem_cache_*`:
 
 ```c
-struct kmem_cache *my_cache;
-
-my_cache = kmem_cache_create("my_obj", sizeof(struct my_obj), 
-                              0, SLAB_HWCACHE_ALIGN, NULL);
-
+// 内核模块给自己的结构建 cache:
+struct kmem_cache *my_cache = kmem_cache_create("my_obj",
+        sizeof(struct my_obj), 0, SLAB_HWCACHE_ALIGN, NULL);
 struct my_obj *o = kmem_cache_alloc(my_cache, GFP_KERNEL);
-// ...
 kmem_cache_free(my_cache, o);
 ```
 
----
-
-## 四、kmalloc vs vmalloc
-
-### 4.1 kmalloc
-
-```c
-void *p = kmalloc(size, GFP_KERNEL);
-```
-
-**特征**:
-
-- **物理连续**(可以做 DMA)
-- 走 slab(小对象)/ buddy(大对象)
-- 大小有上限(通常 4 MB,即 buddy 的 order 10)
-- 慢:碎片化时分配失败
-
-### 4.2 vmalloc
-
-```c
-void *p = vmalloc(size);
-```
-
-**特征**:
-
-- **虚拟连续,物理可不连续**
-- 不能做 DMA(物理不连续)
-- 用户态级 mmap-like 机制
-- 可以分配大块(几百 MB)
-- 比 kmalloc 慢一点(要建页表)
-
-### 4.3 选择
-
-```
-小对象、要 DMA、要快:        kmalloc
-大块(>1MB)、不需要 DMA:    vmalloc
-```
-
----
-
-## 五、GFP flags:分配上下文的"提示"
-
-`GFP_*` 告诉内核"这次分配在什么场景":
-
-```c
-GFP_KERNEL:     普通进程上下文,可以睡眠等内存
-GFP_ATOMIC:     中断 / 自旋锁内,绝不能睡眠
-GFP_NOIO:       禁止文件系统 IO(避免死锁)
-GFP_DMA:        必须物理低 16MB 内(老 ISA 设备)
-GFP_HIGHUSER:   用户态高内存
-__GFP_ZERO:     分配后清零
-__GFP_NOFAIL:   死磕,绝不返回 NULL(慎用)
-```
-
-**坑**:**中断处理用了 GFP_KERNEL → 死锁** —— 必须 GFP_ATOMIC。
-
----
-
-## 六、内核内存的回收
-
-### 6.1 page reclaim
-
-物理内存吃紧时,内核会:
-
-```
-1. 扫描 LRU list
-2. 把不常用的页换出 (swap)
-3. 回收 cache(page cache、slab cache)
-4. 还不够 → OOM Killer
-```
-
-### 6.2 vm.swappiness
-
-控制内核多积极地用 swap(0-100):
-
-```
-0   尽量不 swap,优先回收 page cache
-60  默认,平衡
-100 优先 swap,保留 cache
-```
-
-**经验值**:
-
-- 数据库服务器:`vm.swappiness=1`(尽量不 swap)
-- 桌面:60(默认)
-
-### 6.3 vm.vfs_cache_pressure
-
-控制 inode / dentry 缓存的回收积极性:
-
-```
-100 默认,与 page cache 同等优先级
-1000 更积极回收 inode/dentry
-```
-
-**用于**:文件操作密集的场景,inode 缓存吃太多内存。
-
-### 6.4 drop_caches:手动清缓存
+### 3.3 观测:slabtop
 
 ```bash
-echo 1 > /proc/sys/vm/drop_caches    # 清 page cache
-echo 2 > /proc/sys/vm/drop_caches    # 清 inode/dentry
-echo 3 > /proc/sys/vm/drop_caches    # 全清
+slabtop
+#  OBJS  ACTIVE  USE  OBJ SIZE  SLABS  OBJ/SLAB  CACHE SIZE  NAME
+# 100000  90000  90%   256.0K    100        1      24.4MB    task_struct
+# 200000 180000  90%   192.0K    200        1      38.4MB    inode_cache
 ```
 
-**只在测试环境用** —— 生产清缓存会让接下来的请求都从磁盘读,**性能瞬间崩**。
+**"系统内存涨了但所有进程的 RSS 都解释不了"时,slabtop 是第一现场**——经常是 dentry / inode 缓存被海量小文件操作撑起来了(可调 `vm.vfs_cache_pressure` 让内核更积极地回收它们,默认 100,调大更积极)。
 
 ---
 
-## 七、page cache:Linux 的"免费缓存"
+## 四、kmalloc vs vmalloc:内核里的"两种 malloc"
 
-### 7.1 是什么
+内核代码自己要内存时,有两个常用入口:
 
+| | `kmalloc(size, flags)` | `vmalloc(size)` |
+| --- | --- | --- |
+| 物理连续性 | **连续**(走 slab / buddy) | 虚拟连续,物理可以碎 |
+| 能否 DMA | 能 | **不能**(设备不认虚拟地址) |
+| 大小上限 | 约 4MB(buddy order 10) | 几百 MB 没问题 |
+| 速度 | 快 | 慢一点(要逐页建页表映射) |
+| 碎片敏感 | 大块在碎片化机器上会失败 | 不敏感 |
+
+选择口诀:**小对象、要 DMA、要快 → kmalloc;大块、不碰设备 → vmalloc**。
+
+kmalloc 还要带一个 `GFP_*` 标志,告诉内核"我现在处于什么上下文":
+
+```c
+GFP_KERNEL:   普通进程上下文,缺内存可以睡着等回收
+GFP_ATOMIC:   中断 / 自旋锁里,绝不能睡——要么立刻给要么失败
+GFP_NOIO:     回收时禁止发 IO(防止 IO 路径上的递归死锁)
+GFP_DMA:      限定低 16MB 物理内存(伺候老 ISA 设备)
+__GFP_ZERO:   分配顺便清零
+__GFP_NOFAIL: 死磕到拿到为止(慎用)
 ```
-你 read("/data/file")
-→ 内核读磁盘
-→ 把数据缓存到 page cache
-→ 拷贝到你的 buffer
 
-下次再 read 同一文件
-→ 直接从 page cache 拿,不打磁盘
-```
+经典死法:**中断处理函数里用了 GFP_KERNEL**——它一睡眠,整个 CPU 的中断处理卡死。中断里只能 GFP_ATOMIC。
 
-**Linux 默认会用所有空闲内存做 page cache** —— 这就是 `free -h` 里 `available` 远大于 `free` 的原因。
+---
+
+## 五、page cache:那 11GB"消失的内存"
+
+现在回答开头的惊吓。看这个输出:
 
 ```bash
 free -h
-#               total   used   free   shared  buff/cache  available
-# Mem:           16Gi    4Gi   500Mi   100Mi      11Gi      11Gi
-# Swap:           4Gi     0B     4Gi
+#         total   used   free   shared  buff/cache  available
+# Mem:     16Gi    4Gi   500Mi   100Mi      11Gi       11Gi
 ```
 
-`buff/cache` 11 GB **不是被用了,而是 Linux 拿来做缓存了**——程序需要时立即让出。
+那 11GB 的 buff/cache 是 **page cache**:你每次 `read` 一个文件,内核顺手把数据留在内存里,下次再读同一块就不打磁盘了。**Linux 的哲学是"空闲内存就是浪费的内存"——能拿来做缓存的全拿去**。关键在于这些页是"随叫随让"的:程序要内存时内核直接回收它们。
 
-### 7.2 写也走 page cache
+所以铁律是:**看 available,别看 free**。available 才是"程序还能用多少"。
 
-```
-write("/data/file")
-→ 写入 page cache(标记 dirty)
-→ 立即返回(异步刷盘)
-
-后台 pdflush / writeback 线程定时刷盘
-```
-
-**这就是 write 比想象中快的原因** —— 没有立刻打磁盘。
-
-**fsync** 才是真正强制刷盘:
-
-```c
-write(fd, ...);
-fsync(fd);    // 阻塞,直到数据真在磁盘上
-```
-
-### 7.3 dirty 限制
+写也走 page cache,而且更妙:
 
 ```
-vm.dirty_ratio:           dirty 内存占总内存的最大百分比 → 触发同步刷盘
-vm.dirty_background_ratio: 触发后台刷盘的阈值
+write() → 数据进 page cache,标记 dirty → 立即返回(没碰磁盘!)
+后台 writeback 线程定期把 dirty 页刷盘
 ```
 
-**默认**:`dirty_ratio=20, dirty_background_ratio=10`。
+**这就是 write 快得不像在写磁盘的原因——它确实没在写磁盘**。代价是掉电会丢没刷盘的数据,所以数据库在关键节点调 `fsync(fd)` 强制落盘(阻塞到数据真正在盘上)。
 
-**调优**:大量 IO 写入的服务(数据库)调小这两个值,**避免突然大块刷盘 stall 业务**。
+dirty 页的水位由两个参数管:`vm.dirty_background_ratio`(默认 10,超过就启动后台刷)和 `vm.dirty_ratio`(默认 20,超过就强制同步刷,**业务线程会被卡住**)。重写入的服务通常把它们调小,把"攒一大坨突然刷盘 stall 几秒"摊平成持续小流量。
+
+顺带认识 **tmpfs**:`/tmp`、`/run`、`/dev/shm` 这些挂载点的"文件"其实直接存在 page cache 里,读写飞快但关机即焚。**坑:tmpfs 占的内存算 used 不算 cache**——往 /dev/shm 倒了 4GB 文件,used 莫名多 4GB,经常没人想得起来。
 
 ---
 
-## 八、内核内存的可观测
+## 六、内存吃紧时:回收的优先级链
 
-### 8.1 /proc/meminfo
+物理内存不够了,内核按这个顺序自救:
+
+```
+1. 回收 page cache(干净页直接丢,dirty 页先刷盘)
+2. 回收 slab 里可回收的部分(主要是 dentry / inode 缓存)
+3. 把冷的匿名页换到 swap
+4. 都不行 → OOM Killer 杀进程(06 篇讲过选人规则)
+```
+
+第 3 步的积极性由 `vm.swappiness`(0-100)控制:0 是几乎不 swap、优先砍 cache,默认 60,100 是积极 swap 保 cache。**数据库服务器设 1**——宁可缓存少点,绝不让热数据被换出去(被换出的页再访问就是毫秒级主缺页,p99 当场去世)。
+
+还有个看起来诱人的开关:
+
+```bash
+echo 3 > /proc/sys/vm/drop_caches   # 1=清 page cache,2=清 dentry/inode,3=全清
+```
+
+**只配出现在测试环境**(比如做干净的 IO 基准测试)。生产上清缓存等于把所有热数据扔了,接下来每个请求都打磁盘,**性能瞬间塌方**——开头说的那种"定时清缓存的 cron"就是在定时自残。
+
+---
+
+## 七、内核这本账去哪查:/proc/meminfo
 
 ```bash
 cat /proc/meminfo
 # MemTotal:       16384000 kB
 # MemFree:          500000 kB
-# Buffers:          200000 kB        ← 块设备缓存
-# Cached:        11000000 kB        ← page cache (含 tmpfs)
-# Slab:           1000000 kB        ← slab 总占用
-# SReclaimable:    800000 kB        ← slab 可回收(主要是 dentry/inode)
-# SUnreclaim:      200000 kB        ← slab 不可回收(其他内核结构)
-# KernelStack:      80000 kB        ← 内核栈(每个线程 16KB)
-# PageTables:      100000 kB        ← 页表本身占的内存
-# ...
+# Buffers:          200000 kB   ← 块设备缓存
+# Cached:        11000000 kB   ← page cache(含 tmpfs!)
+# Slab:           1000000 kB   ← slab 总占用
+# SReclaimable:    800000 kB   ←   其中可回收(dentry/inode 为主)
+# SUnreclaim:      200000 kB   ←   其中不可回收
+# KernelStack:      80000 kB   ← 内核栈,每个线程 16KB
+# PageTables:      100000 kB   ← 页表本身占的内存
 ```
 
-### 8.2 内核内存"诡异占用"排查
-
-```
-现象:Total 16GB,used 4GB,但 buff/cache 只有 1GB,内存哪去了?
-排查:
-  cat /proc/meminfo | grep -i "slab\|kernel\|page"
-  发现 PageTables 占了 5GB → 大量大进程,页表本身爆炸
-  或 KernelStack 占了 2GB → 几十万线程
-```
+一个真实的"内存失踪案"排查:total 16GB、所有进程 RSS 加起来 4GB、cache 才 1GB,剩下的呢?翻 meminfo——`PageTables` 占了 5GB(几百个大进程,**页表自己就是 GB 级开销**,06 篇讲的多级页表不是免费的),或者 `KernelStack` 占 2GB(几十万个线程,每个白送内核 16KB)。**用户态工具看不见的内存,全在这个文件里对账**。
 
 ---
 
-## 九、tmpfs:基于内存的"文件系统"
+## 八、容器的内存账:cgroup
+
+Docker / K8s 限制容器内存,底层就是 cgroup:
 
 ```bash
-mount | grep tmpfs
-# tmpfs on /tmp type tmpfs (rw,nosuid,nodev,size=8G)
-# tmpfs on /run ...
-```
-
-**tmpfs 文件实际存在 page cache**——读写极快,**但不持久化**(关机消失)。
-
-**用途**:
-
-- `/tmp`、`/run`(运行时数据)
-- Docker 的 `tmpfs` mount
-- 共享内存(`/dev/shm`)
-
-**坑**:tmpfs **算 used 内存,不算 cache** —— 容易让人误以为内存被吃了但不知道哪里。
-
----
-
-## 十、cgroup memory:容器的内存限制
-
-K8s / Docker 怎么限制容器内存?**通过 cgroup**:
-
-```bash
-# 容器启动时
 docker run -m 1g ...
-# 等价于
-mkdir /sys/fs/cgroup/memory/mycontainer
+# 约等于:
 echo 1G > /sys/fs/cgroup/memory/mycontainer/memory.limit_in_bytes
 echo $$ > /sys/fs/cgroup/memory/mycontainer/cgroup.procs
 ```
 
-**内核为这个 cgroup 单独算 RSS / cache**,超 limit 触发 cgroup 内 OOM Killer。
+内核为每个 cgroup 单独记账(RSS + page cache),超限就触发 **cgroup 内的 OOM Killer**。两个著名的坑:
 
-**坑**:
+- **老版 JVM 看不见 cgroup**,按宿主机内存自动算 -Xmx——容器限 2G,JVM 按 64G 的机器给自己定了 16G 的堆,起来没多久就 OOMKilled。Java 10+ 的 `-XX:+UseContainerSupport` 修了(配合 07 篇的 MaxRAMPercentage)
+- **page cache 也算进 cgroup 的账**——容器里大量读写文件,cache 把 limit 顶满,看起来"进程没用多少内存却 OOM 了"
 
-- **JVM 在容器里看不到 cgroup 限制**(老版 JVM 看的是宿主机内存)→ 用 `-XX:+UseContainerSupport`(Java 10+)
-- **page cache 算进 cgroup 内存**——大量 IO 时 cache 撑爆 limit,触发 OOM
-
-详见 25 篇容器底层。
+容器底层的完整机制详见 25 篇。
 
 ---
 
-## 十一、NUMA 与内核内存
+## 九、NUMA:内存还分远近
 
-NUMA 系统中,**内存属于不同节点(socket)**:
+多 socket 服务器上,内存条物理上挂在不同 CPU 下面:
 
 ```
-Node 0:  CPU 0-15 + 64 GB 内存
-Node 1:  CPU 16-31 + 64 GB 内存
-跨 node 访问内存 → 延迟翻倍
+Node 0:CPU 0-15  + 64GB 本地内存
+Node 1:CPU 16-31 + 64GB 本地内存
+跨 node 访问 → 走 socket 间互联,延迟约翻倍
 ```
 
-**内核分配策略**:
-
-- 默认:**优先本地 node**(numa_balancing)
-- 不够 → fallback 到其他 node
+内核分配策略默认"优先本地 node,不够再去远端"。排查和绑定:
 
 ```bash
-numactl --hardware              # 看 NUMA 拓扑
-numastat                        # 看跨 node 访问统计
-numactl --cpunodebind=0 --membind=0 ./app    # 绑死 node 0
+numactl --hardware                            # 看拓扑
+numastat                                      # numa_miss 高 = 跨 node 严重
+numactl --cpunodebind=0 --membind=0 ./app     # 绑死 node 0
 ```
 
-详见 10 篇 CPU 缓存与一致性。
+NUMA 对性能的完整影响(以及为什么数据库要绑核)放到下一篇和 CPU 缓存一起讲。
 
 ---
 
-## 十二、踩坑提醒
+## 踩坑提醒
 
-1. **以为 buff/cache 是被吃的内存** —— Linux 拿来做缓存,可立即让出
-2. **看 free 不看 available** —— 真正可用是 available,不是 free
-3. **kmalloc 大块** —— 碎片化时失败,大块用 vmalloc
-4. **中断里用 GFP_KERNEL** —— 死锁,必须 GFP_ATOMIC
-5. **vm.swappiness 不调** —— 数据库被 swap 拖死
-6. **手动 drop_caches 在生产** —— 接下来所有请求打磁盘
-7. **slab 占用看不见** —— `slabtop` 是必备
-8. **dirty 比例不调** —— 大块刷盘 stall 业务几秒
-9. **容器没给 JVM 容器感知** —— -Xmx 比 limit 还大
-10. **NUMA 不绑核** —— 跨 node 访问内存,延迟飘
-11. **以为 vmalloc = malloc** —— vmalloc 物理不连续,不能做 DMA
-12. **PageTables 占大头不知道** —— 大进程多时,页表本身就 GB 级
+1. **把 buff/cache 当"被吃掉的内存"**——那是随叫随让的缓存,看 available 才是真可用
+2. **生产环境 drop_caches**——热数据全扔,接下来所有请求打磁盘,这是自残不是优化
+3. **kmalloc 申请大块**——上限 4MB 且碎片化时失败,大块用 vmalloc
+4. **中断上下文用 GFP_KERNEL**——可能睡眠 = 死锁,中断里只有 GFP_ATOMIC
+5. **数据库机器不调 swappiness**——默认 60 会把热页换出去,p99 被主缺页打飞,设 1
+6. **内存失踪不查 /proc/meminfo**——PageTables / KernelStack / SUnreclaim 这些隐形大户只在这里现形
+7. **不会用 slabtop**——dentry / inode 缓存吃掉几个 GB 时,进程视角永远找不到凶手
+8. **dirty 水位不调**——重写入服务攒一大坨 dirty 页突然同步刷盘,业务 stall 几秒
+9. **容器里跑老 JVM 不开容器感知**——按宿主机内存定堆大小,必被 OOMKilled
+10. **忘了 page cache 算 cgroup 的账**——容器内大量文件 IO 也能把 limit 顶爆
+11. **把 vmalloc 当 kmalloc 用**——物理不连续,给 DMA 用直接出事
+12. **tmpfs 当普通磁盘使**——它占的是内存且算 used,往 /dev/shm 倒大文件等于偷偷吃内存
 
 ---
 
-下一篇:`10-CPU缓存与一致性.md`,讲多核 CPU 的"暗物质"——**MESI 协议**(M / E / S / I 四个状态决定 cache line 的共享 / 独占)、**false sharing** 为什么让性能崩 10 倍、**NUMA** 跨 socket 访问的代价、**cache line ping-pong** 的来源,以及为什么"高性能并发代码必须按 cache line 设计数据结构"。
+下一篇:`10-CPU缓存与一致性.md`,内存层的最后一块拼图,也是最影响并发性能的一块——MESI 协议怎么让多核看到一致的内存、false sharing 为什么能让多线程比单线程还慢 10 倍、NUMA 跨 socket 的真实代价,以及为什么高性能代码必须按 cache line(64 字节)设计数据结构。
