@@ -1,0 +1,56 @@
+import{c as s,Q as n,j as t,m as e}from"./chunks/framework.Bhbi9jCp.js";const g=JSON.parse('{"title":"项目实战","description":"","frontmatter":{},"headers":[],"relativePath":"项目实战.md","filePath":"项目实战.md","lastUpdated":1781140945000}'),p={name:"项目实战.md"};function i(l,a,d,c,r,o){return n(),t("div",null,[...a[0]||(a[0]=[e(`<h1 id="项目实战" tabindex="-1">项目实战 <a class="header-anchor" href="#项目实战" aria-label="Permalink to &quot;项目实战&quot;">​</a></h1><p>这个页面不新增知识系列,只定义几个贯穿项目。它们的作用是把已有系列串起来,让知识从&quot;读过&quot;变成&quot;用过&quot;。</p><p>一句话:<strong>项目实战不是再开一堆教程,而是给已有知识找真实落点。</strong></p><hr><h2 id="一、项目-a-ai-知识库-agent-平台" tabindex="-1">一、项目 A:AI 知识库 / Agent 平台 <a class="header-anchor" href="#一、项目-a-ai-知识库-agent-平台" aria-label="Permalink to &quot;一、项目 A:AI 知识库 / Agent 平台&quot;">​</a></h2><p>目标:做一个能摄取文档、检索问答、调用工具、评测质量、上线监控的 AI 应用。</p><p>涉及系列:</p><div class="language-text vp-adaptive-theme"><button title="Copy Code" class="copy"></button><span class="lang">text</span><pre class="shiki shiki-themes github-light github-dark vp-code" tabindex="0"><code><span class="line"><span>AI 学习</span></span>
+<span class="line"><span>数据工程</span></span>
+<span class="line"><span>后端学习</span></span>
+<span class="line"><span>AI Infra</span></span>
+<span class="line"><span>DevOps / SRE</span></span>
+<span class="line"><span>安全</span></span>
+<span class="line"><span>Claude Code</span></span></code></pre></div><p>核心模块:</p><table tabindex="0"><thead><tr><th>模块</th><th>要解决的问题</th></tr></thead><tbody><tr><td>文档摄取</td><td>文件解析、清洗、去重、版本管理</td></tr><tr><td>切分与索引</td><td>chunk 策略、metadata、embedding、向量库</td></tr><tr><td>RAG 问答</td><td>检索、重排、引用、拒答、上下文预算</td></tr><tr><td>Agent 工具</td><td>Tool schema、权限、沙箱、审计</td></tr><tr><td>Eval</td><td>测试集、回归、打分、人工复核</td></tr><tr><td>服务端</td><td>API、鉴权、限流、日志、成本</td></tr><tr><td>推理部署</td><td>API 模型或自部署 vLLM / SGLang</td></tr><tr><td>生产化</td><td>监控、告警、灰度、事故复盘</td></tr></tbody></table><p>建议里程碑:</p><div class="language-text vp-adaptive-theme"><button title="Copy Code" class="copy"></button><span class="lang">text</span><pre class="shiki shiki-themes github-light github-dark vp-code" tabindex="0"><code><span class="line"><span>M1:本地文档 RAG 能跑通</span></span>
+<span class="line"><span>M2:支持多知识库和引用</span></span>
+<span class="line"><span>M3:加入工具调用和权限控制</span></span>
+<span class="line"><span>M4:建立评测集和回归门禁</span></span>
+<span class="line"><span>M5:部署上线并接入监控</span></span></code></pre></div><p>优先阅读:</p><ul><li><a href="/chewingdocs/aiLearning/22-RAG检索增强生成">RAG检索增强生成</a></li><li><a href="/chewingdocs/aiLearning/23-Embedding与向量数据库">Embedding与向量数据库</a></li><li><a href="/chewingdocs/aiLearning/32-Evaluation评测">Evaluation评测</a></li><li><a href="/chewingdocs/aiInfraLearning/06-推理引擎景观">推理引擎景观</a></li><li><a href="/chewingdocs/securityLearning/01-安全总览">安全总览</a></li></ul><hr><h2 id="二、项目-b-高并发业务系统" tabindex="-1">二、项目 B:高并发业务系统 <a class="header-anchor" href="#二、项目-b-高并发业务系统" aria-label="Permalink to &quot;二、项目 B:高并发业务系统&quot;">​</a></h2><p>目标:做一个能承受高并发、库存竞争、缓存冲击、异步削峰和故障降级的业务系统。</p><p>候选题目:</p><div class="language-text vp-adaptive-theme"><button title="Copy Code" class="copy"></button><span class="lang">text</span><pre class="shiki shiki-themes github-light github-dark vp-code" tabindex="0"><code><span class="line"><span>秒杀 / 库存系统</span></span>
+<span class="line"><span>短链与访问统计系统</span></span>
+<span class="line"><span>Feed / 通知系统</span></span>
+<span class="line"><span>订单与支付状态机</span></span></code></pre></div><p>涉及系列:</p><div class="language-text vp-adaptive-theme"><button title="Copy Code" class="copy"></button><span class="lang">text</span><pre class="shiki shiki-themes github-light github-dark vp-code" tabindex="0"><code><span class="line"><span>后端学习</span></span>
+<span class="line"><span>系统设计</span></span>
+<span class="line"><span>分布式系统</span></span>
+<span class="line"><span>DevOps / SRE</span></span>
+<span class="line"><span>算法</span></span>
+<span class="line"><span>安全</span></span></code></pre></div><p>核心模块:</p><table tabindex="0"><thead><tr><th>模块</th><th>要解决的问题</th></tr></thead><tbody><tr><td>API 层</td><td>鉴权、限流、幂等、错误处理</td></tr><tr><td>存储层</td><td>MySQL / PostgreSQL、索引、事务</td></tr><tr><td>缓存层</td><td>Redis、缓存一致性、热点 key</td></tr><tr><td>异步层</td><td>消息队列、削峰、重试、死信</td></tr><tr><td>状态机</td><td>订单、支付、库存、超时关闭</td></tr><tr><td>可观测</td><td>指标、日志、链路追踪、告警</td></tr><tr><td>压测</td><td>容量估算、瓶颈定位、降级预案</td></tr></tbody></table><p>建议里程碑:</p><div class="language-text vp-adaptive-theme"><button title="Copy Code" class="copy"></button><span class="lang">text</span><pre class="shiki shiki-themes github-light github-dark vp-code" tabindex="0"><code><span class="line"><span>M1:单体版本跑通核心流程</span></span>
+<span class="line"><span>M2:加入缓存和消息队列</span></span>
+<span class="line"><span>M3:实现幂等、限流和降级</span></span>
+<span class="line"><span>M4:做压测和容量估算</span></span>
+<span class="line"><span>M5:接入监控并演练故障</span></span></code></pre></div><p>优先阅读:</p><ul><li><a href="/chewingdocs/backendLearning/20-Redis实战应用">Redis实战应用</a></li><li><a href="/chewingdocs/backendLearning/31-消息队列基础">消息队列基础</a></li><li><a href="/chewingdocs/backendLearning/43-限流熔断降级">限流熔断降级</a></li><li><a href="/chewingdocs/systemDesign/01-系统设计总览">系统设计总览</a></li><li><a href="/chewingdocs/devopsLearning/01-DevOps-SRE总览">DevOps-SRE总览</a></li></ul><hr><h2 id="三、项目-c-跨端产品闭环" tabindex="-1">三、项目 C:跨端产品闭环 <a class="header-anchor" href="#三、项目-c-跨端产品闭环" aria-label="Permalink to &quot;三、项目 C:跨端产品闭环&quot;">​</a></h2><p>目标:做一个 Web 管理端 + 移动端 App + 后端服务 + 发布监控的完整产品闭环。</p><p>涉及系列:</p><div class="language-text vp-adaptive-theme"><button title="Copy Code" class="copy"></button><span class="lang">text</span><pre class="shiki shiki-themes github-light github-dark vp-code" tabindex="0"><code><span class="line"><span>前端学习</span></span>
+<span class="line"><span>移动端通用知识</span></span>
+<span class="line"><span>Flutter</span></span>
+<span class="line"><span>Android 原生开发</span></span>
+<span class="line"><span>iOS 原生开发</span></span>
+<span class="line"><span>后端学习</span></span>
+<span class="line"><span>DevOps / SRE</span></span></code></pre></div><p>核心模块:</p><table tabindex="0"><thead><tr><th>模块</th><th>要解决的问题</th></tr></thead><tbody><tr><td>Web 管理端</td><td>登录、权限、表格、表单、文件上传</td></tr><tr><td>移动端 App</td><td>登录、推送、深链、离线缓存</td></tr><tr><td>后端 API</td><td>用户、角色、业务数据、审计日志</td></tr><tr><td>文件系统</td><td>对象存储、上传回调、权限控制</td></tr><tr><td>发布链路</td><td>Web 部署、App 打包、签名、灰度</td></tr><tr><td>监控</td><td>崩溃、性能、接口、业务漏斗</td></tr></tbody></table><p>建议里程碑:</p><div class="language-text vp-adaptive-theme"><button title="Copy Code" class="copy"></button><span class="lang">text</span><pre class="shiki shiki-themes github-light github-dark vp-code" tabindex="0"><code><span class="line"><span>M1:Web + 后端基础 CRUD</span></span>
+<span class="line"><span>M2:移动端登录和核心页面</span></span>
+<span class="line"><span>M3:推送、深链、文件上传</span></span>
+<span class="line"><span>M4:CI/CD 和环境隔离</span></span>
+<span class="line"><span>M5:灰度发布、监控、事故演练</span></span></code></pre></div><p>优先阅读:</p><ul><li><a href="/chewingdocs/webLearning/01-前端学习路线总览">前端学习路线总览</a></li><li><a href="/chewingdocs/mobileCommonLearning/01-移动端通用知识总览">移动端通用知识总览</a></li><li><a href="/chewingdocs/mobileCommonLearning/10-多环境多flavor与渠道包">多环境多flavor与渠道包</a></li><li><a href="/chewingdocs/mobileCommonLearning/22-发布前检查清单">发布前检查清单</a></li><li><a href="/chewingdocs/backendLearning/01-后端学习路线总览">后端学习路线总览</a></li></ul><hr><h2 id="四、项目-d-小型视频会议-录制回放" tabindex="-1">四、项目 D:小型视频会议 + 录制回放 <a class="header-anchor" href="#四、项目-d-小型视频会议-录制回放" aria-label="Permalink to &quot;四、项目 D:小型视频会议 + 录制回放&quot;">​</a></h2><p>目标:做一个能多人通话、屏幕共享、录制、转码、回放和诊断的音视频工程项目。</p><p>涉及系列:</p><div class="language-text vp-adaptive-theme"><button title="Copy Code" class="copy"></button><span class="lang">text</span><pre class="shiki shiki-themes github-light github-dark vp-code" tabindex="0"><code><span class="line"><span>音视频工程</span></span>
+<span class="line"><span>网络</span></span>
+<span class="line"><span>后端学习</span></span>
+<span class="line"><span>DevOps / SRE</span></span>
+<span class="line"><span>移动端通用知识</span></span>
+<span class="line"><span>前端学习</span></span></code></pre></div><p>核心模块:</p><table tabindex="0"><thead><tr><th>模块</th><th>要解决的问题</th></tr></thead><tbody><tr><td>实时通话</td><td>WebRTC、房间、信令、NAT 穿透</td></tr><tr><td>媒体链路</td><td>摄像头、麦克风、编码、码率、丢包</td></tr><tr><td>服务端</td><td>房间状态、鉴权、信令、录制任务</td></tr><tr><td>录制转码</td><td>FFmpeg、切片、封装、存储</td></tr><tr><td>回放</td><td>HLS / MP4、倍速、断点续播</td></tr><tr><td>诊断</td><td>网络质量、设备权限、日志、通话质量</td></tr></tbody></table><p>建议里程碑:</p><div class="language-text vp-adaptive-theme"><button title="Copy Code" class="copy"></button><span class="lang">text</span><pre class="shiki shiki-themes github-light github-dark vp-code" tabindex="0"><code><span class="line"><span>M1:一对一通话</span></span>
+<span class="line"><span>M2:多人房间和屏幕共享</span></span>
+<span class="line"><span>M3:服务端录制和 FFmpeg 转码</span></span>
+<span class="line"><span>M4:回放页和对象存储</span></span>
+<span class="line"><span>M5:通话质量监控和故障诊断</span></span></code></pre></div><p>优先阅读:</p><ul><li><a href="/chewingdocs/mediaTechLearning/01-音视频工程总览与心智">音视频工程总览与心智</a></li><li><a href="/chewingdocs/networkLearning/01-网络学习路线总览">网络学习路线总览</a></li><li><a href="/chewingdocs/backendLearning/49-WebSocket与实时通信">WebSocket与实时通信</a></li><li><a href="/chewingdocs/mobileCommonLearning/20-网络诊断证书代理弱网与抓包">网络诊断、证书、代理、弱网与抓包</a></li></ul><hr><h2 id="五、项目怎么写" tabindex="-1">五、项目怎么写 <a class="header-anchor" href="#五、项目怎么写" aria-label="Permalink to &quot;五、项目怎么写&quot;">​</a></h2><p>每个项目后续如果展开,统一按这个结构写:</p><div class="language-text vp-adaptive-theme"><button title="Copy Code" class="copy"></button><span class="lang">text</span><pre class="shiki shiki-themes github-light github-dark vp-code" tabindex="0"><code><span class="line"><span>01 项目目标与范围</span></span>
+<span class="line"><span>02 架构图与边界</span></span>
+<span class="line"><span>03 最小可运行版本</span></span>
+<span class="line"><span>04 核心模块一</span></span>
+<span class="line"><span>05 核心模块二</span></span>
+<span class="line"><span>06 监控与测试</span></span>
+<span class="line"><span>07 发布与回滚</span></span>
+<span class="line"><span>08 事故演练与复盘</span></span></code></pre></div><p>项目文档不要变成 API 罗列。每一篇都必须回答:</p><div class="language-text vp-adaptive-theme"><button title="Copy Code" class="copy"></button><span class="lang">text</span><pre class="shiki shiki-themes github-light github-dark vp-code" tabindex="0"><code><span class="line"><span>这个模块解决什么真实问题?</span></span>
+<span class="line"><span>什么时候会出事故?</span></span>
+<span class="line"><span>怎么测试?</span></span>
+<span class="line"><span>怎么上线?</span></span>
+<span class="line"><span>怎么回滚?</span></span></code></pre></div><hr><h2 id="六、当前优先级" tabindex="-1">六、当前优先级 <a class="header-anchor" href="#六、当前优先级" aria-label="Permalink to &quot;六、当前优先级&quot;">​</a></h2><p>建议优先顺序:</p><div class="language-text vp-adaptive-theme"><button title="Copy Code" class="copy"></button><span class="lang">text</span><pre class="shiki shiki-themes github-light github-dark vp-code" tabindex="0"><code><span class="line"><span>AI 知识库 / Agent 平台</span></span>
+<span class="line"><span>  -&gt; 跨端产品闭环</span></span>
+<span class="line"><span>  -&gt; 小型视频会议 + 录制回放</span></span>
+<span class="line"><span>  -&gt; 高并发业务系统</span></span></code></pre></div><p>理由很简单:它们最能复用当前已有系列,也最能暴露知识之间的连接点。</p>`,60)])])}const b=s(p,[["render",i]]);export{g as __pageData,b as default};
