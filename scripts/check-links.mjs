@@ -10,7 +10,7 @@ function walk(dir) {
   const files = [];
 
   for (const entry of entries) {
-    if (entry.name.startsWith(".") && excludedDirs.has(entry.name)) continue;
+    if (entry.name.startsWith(".")) continue;
 
     const fullPath = path.join(dir, entry.name);
     if (entry.isDirectory()) {

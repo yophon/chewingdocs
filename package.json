@@ -7,8 +7,7 @@
     "docs:build": "NODE_OPTIONS=--max-old-space-size=6144 vitepress build docs",
     "docs:preview": "vitepress preview docs --host 0.0.0.0",
     "docs:sync-series": "node scripts/sync-series.mjs",
-    "docs:check": "node scripts/check-series.mjs && node scripts/check-plan-counts.mjs && node scripts/check-links.mjs && npm run docs:build",
-    "docs:audit-review": "node scripts/audit-review-keywords.mjs"
+    "docs:check": "node scripts/check-series.mjs && node scripts/check-plan-counts.mjs && node scripts/check-links.mjs && npm run docs:build"
   },
   "devDependencies": {
     "vitepress": "^1.6.4"

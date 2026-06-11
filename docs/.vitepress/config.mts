@@ -22,13 +22,13 @@ function itemsForDir(dir: string): DefaultTheme.SidebarItem[] {
     .filter((file) => file.endsWith(".md") && file !== "00-写作计划.md" && file !== "目录.md")
     .sort((a, b) => a.localeCompare(b, "zh-Hans-CN", { numeric: true }))
     .map((file) => ({
-      text: file === "目录.md" ? "目录" : titleFromFile(file),
+      text: titleFromFile(file),
       link: `/${dir}/${stripExt(file)}`
     }));
 }
 
 function firstReadableLink(dir: string) {
-  const firstItem = itemsForDir(dir).find((item) => item.text !== "目录");
+  const firstItem = itemsForDir(dir)[0];
   if (firstItem) return firstItem.link;
 
   const planFile = path.join(docsRoot, dir, "00-写作计划.md");
@@ -131,7 +131,6 @@ function nav(): DefaultTheme.NavItem[] {
       text: "主题",
       items: groupedTopicItems()
     },
-    { text: "版本复查", link: "/版本复查清单" },
     { text: "未来规划", link: "/未来系列规划" }
   ];
 }
@@ -188,10 +187,7 @@ export default defineConfig({
         }
       }
     },
-    outline: {
-      level: [2, 3],
-      label: "本页目录"
-    },
+    outline: false,
     socialLinks: [
       { icon: "github", link: "https://github.com/yophon/chewingdocs" }
     ],
