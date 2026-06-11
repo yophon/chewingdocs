@@ -49,18 +49,89 @@ function sidebar(): DefaultTheme.Sidebar {
   );
 }
 
+function seriesItem(dir: string) {
+  const item = series.find((entry) => entry.dir === dir);
+  return {
+    text: item?.text ?? dir,
+    link: firstReadableLink(dir)
+  };
+}
+
+function groupedTopicItems(): DefaultTheme.NavItemChildren[] {
+  return [
+    {
+      text: "AI 工程",
+      items: [
+        seriesItem("aiLearning"),
+        seriesItem("aiInfraLearning"),
+        seriesItem("claudeLearning"),
+        seriesItem("dataEngineering")
+      ]
+    },
+    {
+      text: "后端与架构",
+      items: [
+        seriesItem("backendLearning"),
+        seriesItem("systemDesign"),
+        seriesItem("distributedLearning"),
+        seriesItem("devopsLearning"),
+        seriesItem("cloudBasicsLearning")
+      ]
+    },
+    {
+      text: "客户端",
+      items: [
+        seriesItem("webLearning"),
+        seriesItem("mobileCommonLearning"),
+        seriesItem("flutterLearning"),
+        seriesItem("androidNativeLearning"),
+        seriesItem("androidPlatformLearning"),
+        seriesItem("iosNativeLearning")
+      ]
+    },
+    {
+      text: "工程基础",
+      items: [
+        seriesItem("networkLearning"),
+        seriesItem("osLearning"),
+        seriesItem("algorithmLearning"),
+        seriesItem("mathForCS"),
+        seriesItem("gitLearning"),
+        seriesItem("terminalLearning")
+      ]
+    },
+    {
+      text: "语言与代码设计",
+      items: [
+        seriesItem("goLearning"),
+        seriesItem("rustLearning"),
+        seriesItem("designPatternLearning"),
+        seriesItem("interpreterLearning")
+      ]
+    },
+    {
+      text: "产品、游戏与安全",
+      items: [
+        seriesItem("mediaTechLearning"),
+        seriesItem("godotLearning"),
+        seriesItem("securityLearning"),
+        seriesItem("杂项")
+      ]
+    }
+  ];
+}
+
 function nav(): DefaultTheme.NavItem[] {
   return [
     { text: "首页", link: "/" },
+    { text: "学习路径", link: "/学习路径" },
+    { text: "项目实战", link: "/项目实战" },
     { text: "学习系列", link: "/series" },
-    { text: "版本复查", link: "/版本复查清单" },
     {
       text: "主题",
-      items: series.map(({ text, dir }) => ({
-        text,
-        link: firstReadableLink(dir)
-      }))
+      items: groupedTopicItems()
     },
+    { text: "版本复查", link: "/版本复查清单" },
     { text: "未来规划", link: "/未来系列规划" }
   ];
 }

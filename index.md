@@ -7,11 +7,14 @@ hero:
   tagline: 按系列整理的技术学习地图,从基础心智到系统设计、AI Infra、云服务、排障和真实工程取舍。
   actions:
     - theme: brand
-      text: 开始阅读
-      link: /cloudBasicsLearning/01-云服务与互联网基础常识总览
+      text: 学习路径
+      link: /学习路径
     - theme: alt
       text: 查看系列
       link: /series
+    - theme: alt
+      text: 项目实战
+      link: /项目实战
 
 features:
   - title: 云服务与互联网基础
@@ -73,3 +76,5 @@ features:
 [series-table:end]: #
 
 更多规划见：[未来系列规划](/未来系列规划)。
+
+如果不知道先看什么,从 [学习路径](/学习路径) 进入。想把多个系列串成完整项目,看 [项目实战](/项目实战)。
