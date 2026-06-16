@@ -71,7 +71,7 @@ features:
 | 解释器 | [interpreterLearning](/interpreterLearning/01-解释器总览) |
 | 安全 | [securityLearning](/securityLearning/01-安全总览) |
 | Claude Code | [claudeLearning](/claudeLearning/01-Claude-Code总览与心智) |
-| 杂项 | [杂项](/杂项/源站IP暴露路径与Cloudflare防护说明) |
+| 杂项 | [杂项](/杂项/文件与音视频分发原理) |
 
 [series-table:end]: #
 
