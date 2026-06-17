@@ -42,6 +42,7 @@
 | Android 平台基础 | [Android的世界观](/androidPlatformLearning/01-Android的世界观) |
 | iOS 原生开发 | [原生iOS的一张地图](/iosNativeLearning/01-原生iOS的一张地图) |
 | Godot 游戏开发 | [Godot4.6与2D独立游戏心智总览](/godotLearning/01-Godot4.6与2D独立游戏心智总览) |
+| Minecraft 技术原理 | [体素世界-区块与无限地形的存法](/minecraftLearning/01-体素世界-区块与无限地形的存法) |
 | 解释器 | [解释器总览](/interpreterLearning/01-解释器总览) |
 | 安全 | [安全总览](/securityLearning/01-安全总览) |
 | Claude Code | [Claude-Code总览与心智](/claudeLearning/01-Claude-Code总览与心智) |

@@ -114,6 +114,7 @@ function groupedTopicItems(): DefaultTheme.NavItemChildren[] {
       items: [
         seriesItem("mediaTechLearning"),
         seriesItem("godotLearning"),
+        seriesItem("minecraftLearning"),
         seriesItem("securityLearning"),
         seriesItem("杂项")
       ]

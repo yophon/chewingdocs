@@ -24,6 +24,7 @@ export const series = [
   { text: "Android 平台基础", dir: "androidPlatformLearning" },
   { text: "iOS 原生开发", dir: "iosNativeLearning" },
   { text: "Godot 游戏开发", dir: "godotLearning" },
+  { text: "Minecraft 技术原理", dir: "minecraftLearning" },
   { text: "解释器", dir: "interpreterLearning" },
   { text: "安全", dir: "securityLearning" },
   { text: "Claude Code", dir: "claudeLearning" },
