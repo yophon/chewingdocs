@@ -43,7 +43,7 @@
 | 解释器 | 31 | [interpreterLearning](interpreterLearning/01-解释器总览.md) |
 | 安全 | 30 | [securityLearning](securityLearning/01-安全总览.md) |
 | Claude Code | 30 | [claudeLearning](claudeLearning/01-Claude-Code总览与心智.md) |
-| 杂项 | 3 | [杂项](杂项/文件与音视频分发原理.md) |
+| 杂项 | 4 | [杂项](杂项/文件与音视频分发原理.md) |
 
 [series-table:end]: #
 
