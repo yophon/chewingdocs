@@ -1059,7 +1059,7 @@ Claude Code 2025+ 在 prompt 编辑区支持 vim mode
 
 ## 十三、下一篇预告
 
-这一篇讲 modal editing 的"哲学",**下一篇 `20-Neovim 现代配置.md` 进入工程层**——
+这一篇讲 modal editing 的"哲学",**下一篇 `20-Neovim现代配置.md` 进入工程层**——
 
 ```
 modal editing 的"哲学"懂了,具体怎么"用 Neovim 写代码"?

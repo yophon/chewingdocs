@@ -484,4 +484,4 @@ fun setError(s: String?) { _state.update { it.copy(errorMessage = s) } }
 
 ---
 
-下一篇 `11-NavigationCompose 路由.md`,把"单 Activity 怎么显示多个屏幕"讲清楚。`NavHost` / `composable` / 类型安全路由 / 嵌套图 / Predictive Back / Deep Link 一并钉死。读完之后 NotedX 就有真正的列表 / 详情 / 设置三屏。
+下一篇 `11-NavigationCompose路由.md`,把"单 Activity 怎么显示多个屏幕"讲清楚。`NavHost` / `composable` / 类型安全路由 / 嵌套图 / Predictive Back / Deep Link 一并钉死。读完之后 NotedX 就有真正的列表 / 详情 / 设置三屏。

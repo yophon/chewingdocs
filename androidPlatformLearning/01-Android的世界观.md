@@ -273,4 +273,4 @@ Android 16.0              API 36   (2025)
 
 ---
 
-下一篇 `02-APK 解剖.md`,把 APK 完全拆开:Manifest 语法、DEX 文件格式、resources.arsc 怎么编译、签名方案 v1/v2/v3/v4 各自意义、安装时操作系统做了什么。读完你能从一份 APK 解出"这个 App 声明了什么、签名属于谁、要哪些权限"。
+下一篇 `02-APK解剖.md`,把 APK 完全拆开:Manifest 语法、DEX 文件格式、resources.arsc 怎么编译、签名方案 v1/v2/v3/v4 各自意义、安装时操作系统做了什么。读完你能从一份 APK 解出"这个 App 声明了什么、签名属于谁、要哪些权限"。

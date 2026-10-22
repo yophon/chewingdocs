@@ -439,4 +439,4 @@ companion object { lateinit var instance: MainActivity }
 
 ---
 
-下一篇 `08-Fragment 历史 问题与心智.md`,讲 Fragment——它为什么被发明、它的诡异之处(嵌套 Fragment / FragmentManager 状态 / `findFragmentById` 时机)、它的现代替代(Compose Navigation 直接挂 Composable),以及为什么读老代码必须懂它,但新代码尽量不用。
+下一篇 `08-Fragment.md`,讲 Fragment——它为什么被发明、它的诡异之处(嵌套 Fragment / FragmentManager 状态 / `findFragmentById` 时机)、它的现代替代(Compose Navigation 直接挂 Composable),以及为什么读老代码必须懂它,但新代码尽量不用。

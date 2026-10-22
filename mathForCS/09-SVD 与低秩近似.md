@@ -632,4 +632,4 @@ LoRA 网络里实际进来的是:scaling · BA · x,其中 scaling = α / r
 - **sklearn PCA / TruncatedSVD 文档**——稀疏数据的 PCA 标准实现
 - **Funk 2006 博客 "Netflix Update: Try This at Home"**——协同过滤矩阵分解的最早工程实现
 
-下一篇:`10-张量与 einsum.md`——把矩阵的运算推广到任意阶,看 Transformer 里的张量到底怎么流动。
+下一篇:`10-张量与einsum.md`——把矩阵的运算推广到任意阶,看 Transformer 里的张量到底怎么流动。

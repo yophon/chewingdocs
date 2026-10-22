@@ -432,4 +432,4 @@ adb shell dumpsys activity top
 
 ---
 
-下一篇 `15-XML 布局 findViewById 与 ViewBinding.md`,讲 View 系统的"配置方式":XML 布局怎么写、`findViewById` 为什么慢、`ViewBinding` 怎么取代它、`DataBinding` 是更激进的方案(争议大,新项目通常不用)。
+下一篇 `15-XML与ViewBinding.md`,讲 View 系统的"配置方式":XML 布局怎么写、`findViewById` 为什么慢、`ViewBinding` 怎么取代它、`DataBinding` 是更激进的方案(争议大,新项目通常不用)。

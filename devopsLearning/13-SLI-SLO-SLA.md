@@ -753,4 +753,4 @@ history:
 
 **SLO 是数据,告警是行动,Runbook 是手册,On-call 是人——这四样合起来才是 SRE 工程**。**13 是这一切的开始**,**没有 SLO 的可靠性都是耍流氓**。
 
-下一篇 `14-RED-与-USE-方法.md`,从"怎么定 SLI"切到"具体看哪几个指标"——讲清楚为什么服务用 RED(Rate / Errors / Duration)、资源用 USE(Utilization / Saturation / Errors)、为什么这两个**不能混**(用 USE 监控 API 服务 / 用 RED 监控 CPU,都是常见错误)、以及**每个微服务的"必备 4 张图"长什么样**——这是 SLI 落地的工程框架。
+下一篇 `14-RED与USE方法.md`,从"怎么定 SLI"切到"具体看哪几个指标"——讲清楚为什么服务用 RED(Rate / Errors / Duration)、资源用 USE(Utilization / Saturation / Errors)、为什么这两个**不能混**(用 USE 监控 API 服务 / 用 RED 监控 CPU,都是常见错误)、以及**每个微服务的"必备 4 张图"长什么样**——这是 SLI 落地的工程框架。

@@ -330,4 +330,4 @@ CI 跑一个 Claude Code session,改完直接 push 一个新 commit 到 PR。
 - 用 plan mode 控住大改造
 - 让团队新人 clone 项目就能马上用上
 
-下一篇 `12-Anthropic-API入门.md` 进入第二层——**自己写应用**。如果你只是用 Claude Code 不写应用,从这里跳到 `28-Skill设计模式.md` 也行;但 12-23 这一段会让你理解"为什么 Claude Code 是这样设计的"——因为你看完会发现,**Claude Code 自己就是一个用 Anthropic API + Agent SDK 写出来的 Coding Agent**。
+下一篇 `12-AnthropicAPI入门.md` 进入第二层——**自己写应用**。如果你只是用 Claude Code 不写应用,从这里跳到 `28-Skill设计模式.md` 也行;但 12-23 这一段会让你理解"为什么 Claude Code 是这样设计的"——因为你看完会发现,**Claude Code 自己就是一个用 Anthropic API + Agent SDK 写出来的 Coding Agent**。

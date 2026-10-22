@@ -126,4 +126,4 @@ SFU 按层转发
 4. **不做订阅控制**——没人看的视频还在下发。
 5. **会议和直播混用架构**——目标不同。
 
-下一篇:`24-SFU 心智:mediasoup / LiveKit / Janus.md`。
+下一篇:`24-SFU心智-mediasoup-LiveKit-Janus.md`。

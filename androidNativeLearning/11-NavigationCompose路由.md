@@ -473,4 +473,4 @@ navController.navigate(Route.Detail(42)) {
 
 ---
 
-下一篇 `12-Hilt 依赖注入.md`,把 NotedX 的依赖图搭起来——`@HiltAndroidApp` / `@HiltViewModel` / `@Module` / `@Provides` / `@Inject` 的全套用法,以及 KSP 编译期生成的工作机制。一个完整 App 没有 DI,所有依赖都要手动 `Repository(api, dao, ...)`,每加一个屏幕都是字段写一长串——DI 是工程化的最低成本工具。
+下一篇 `12-Hilt依赖注入.md`,把 NotedX 的依赖图搭起来——`@HiltAndroidApp` / `@HiltViewModel` / `@Module` / `@Provides` / `@Inject` 的全套用法,以及 KSP 编译期生成的工作机制。一个完整 App 没有 DI,所有依赖都要手动 `Repository(api, dao, ...)`,每加一个屏幕都是字段写一长串——DI 是工程化的最低成本工具。

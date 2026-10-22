@@ -416,4 +416,4 @@ adb shell content insert --uri content://com.notedx.provider/notes --bind title:
 
 ---
 
-第二篇结束(07-11)。下一篇 `12-Handler Looper MessageQueue Choreographer.md`,把 Android 主线程的事件循环讲透:`Looper.loop()` 是什么、`Handler.post()` 怎么把工作排队、Message 池怎么避免对象分配、`Choreographer` 怎么和 VSync 对齐、Compose 重组是怎么挂在这套机制上的。
+第二篇结束(07-11)。下一篇 `12-Handler与Looper.md`,把 Android 主线程的事件循环讲透:`Looper.loop()` 是什么、`Handler.post()` 怎么把工作排队、Message 池怎么避免对象分配、`Choreographer` 怎么和 VSync 对齐、Compose 重组是怎么挂在这套机制上的。

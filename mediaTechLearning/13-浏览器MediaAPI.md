@@ -136,4 +136,4 @@ localhost 例外
 4. **约束写死 1080p**——低端设备可能直接失败。
 5. **没有 HTTPS**——生产采集直接不可用。
 
-下一篇:`14-MediaRecorder 与本地录制.md`。
+下一篇:`14-MediaRecorder与本地录制.md`。

@@ -1164,7 +1164,7 @@ hx main.py
 
 ## 十六、下一篇预告
 
-下一篇:**`22-Dotfiles心智与方案选型.md`**——讲一个看似简单实际反复让人吃亏的问题:**你的 .zshrc / .config/nvim / .config/helix / .tmux.conf 这一堆配置文件,怎么管才能跨机器一致 + 可演进 + 可传承**。
+下一篇:**`22-Dotfiles心智与方案.md`**——讲一个看似简单实际反复让人吃亏的问题:**你的 .zshrc / .config/nvim / .config/helix / .tmux.conf 这一堆配置文件,怎么管才能跨机器一致 + 可演进 + 可传承**。
 
 ```
 - dotfiles 工程化的 ROI 计算:5 年换 10 台机器,手动配 vs 自动同步

@@ -63,7 +63,7 @@ NotesIsland/
 
 `.xcodeproj` 是 bundle,**直接 cd 进去能看到内部文件**。`project.pbxproj` 是 ASCII plist 格式,Xcode 自动维护——但它**保存了所有文件引用、build phase、build settings**,两个分支同时改 `pbxproj` 一定冲突。
 
-> 处理 `pbxproj` 冲突的两种姿势:**手动解 + 在 Xcode 里重打开验证**(熟手),或者**抛弃冲突方,选一方完整版本,然后手动重做对方的改动**(新人)。git 系列的 [[gitLearning/07-merge合并与冲突]] 里说过"冲突就是看 diff 就懂",但 pbxproj 是个例外——它的 diff 难读,所以更鼓励"分支不要长时间偏离 main"。
+> 处理 `pbxproj` 冲突的两种姿势:**手动解 + 在 Xcode 里重打开验证**(熟手),或者**抛弃冲突方,选一方完整版本,然后手动重做对方的改动**(新人)。git 系列的 [07-merge合并与冲突](../gitLearning/07-merge合并与冲突.md) 里说过"冲突就是看 diff 就懂",但 pbxproj 是个例外——它的 diff 难读,所以更鼓励"分支不要长时间偏离 main"。
 
 ---
 

@@ -142,7 +142,7 @@ groups:
 
 ### 3.1 一份真实 Runbook 范例
 
-```markdown
+````markdown
 # RB-ORDER-001: Order Service 5xx Rate High
 
 ## 1. 告警含义
@@ -262,7 +262,7 @@ kubectl rollout undo deploy/order-service -n order
 - 上次 P0 Postmortem: https://postmortem.internal/2024-11-order-5xx
 - 历史发布: https://argo.internal/applications/order-service
 - DBA on-call: PagerDuty schedule "dba-rotation"
-```
+````
 
 **这一份 Runbook 的关键设计**:
 

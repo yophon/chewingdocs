@@ -435,4 +435,4 @@ Compose `Canvas` Composable 内的 `DrawScope` 提供与 Android Canvas 类似�
 
 ---
 
-下一篇 `17-资源系统:res values-* 限定符与主题继承.md`,讲 Android 资源系统的"魔法"——`values/` / `values-zh/` / `values-night/` / `drawable-xxhdpi/` 怎么自动选,resources.arsc 怎么存,App 的语言 / 深色模式 / 屏幕密度切换怎么自动适配。
+下一篇 `17-资源系统.md`,讲 Android 资源系统的"魔法"——`values/` / `values-zh/` / `values-night/` / `drawable-xxhdpi/` 怎么自动选,resources.arsc 怎么存,App 的语言 / 深色模式 / 屏幕密度切换怎么自动适配。

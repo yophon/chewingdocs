@@ -409,4 +409,4 @@ viewModelScope.launch {        // 默认 Dispatchers.Main.immediate
 
 ---
 
-第三篇结束(12-13)。下一篇 `14-View ViewGroup 与绘制三阶段.md`,从主线程的事件循环进入 UI 系统的核心——View 树是怎么 measure / layout / draw 的、`ViewGroup` 如何排子 View、Choreographer 如何驱动每一帧、`invalidate` / `requestLayout` 触发什么。
+第三篇结束(12-13)。下一篇 `14-View与绘制三阶段.md`,从主线程的事件循环进入 UI 系统的核心——View 树是怎么 measure / layout / draw 的、`ViewGroup` 如何排子 View、Choreographer 如何驱动每一帧、`invalidate` / `requestLayout` 触发什么。

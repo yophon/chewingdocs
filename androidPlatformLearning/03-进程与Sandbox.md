@@ -420,4 +420,4 @@ companion object { lateinit var instance: MainActivity }
 
 ---
 
-下一篇 `04-Binder Android IPC 的物理根.md`,把 Android 进程间通信的核心机制讲透:为什么不是普通 socket / pipe,Binder driver 在内核怎么工作,`IBinder` / `Parcel` / `AIDL` 全套用法,以及 system_server 与 App 进程之间天天发生的几千次 Binder 调用。
+下一篇 `04-Binder.md`,把 Android 进程间通信的核心机制讲透:为什么不是普通 socket / pipe,Binder driver 在内核怎么工作,`IBinder` / `Parcel` / `AIDL` 全套用法,以及 system_server 与 App 进程之间天天发生的几千次 Binder 调用。

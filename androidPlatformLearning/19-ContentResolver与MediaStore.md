@@ -461,4 +461,4 @@ adb shell sqlite3 /data/data/com.android.providers.media.module/databases/extern
 
 ---
 
-下一篇 `20-Android 安全模型:权限 / 签名 / Sandbox / SELinux.md`,把"为什么 Android 比 Linux 桌面安全得多"讲透——UID Sandbox 怎么隔离、APK 签名怎么验证身份、SELinux 怎么限制系统服务、SDK 隔离、Play Protect 扫描机制。
+下一篇 `20-Android安全模型.md`,把"为什么 Android 比 Linux 桌面安全得多"讲透——UID Sandbox 怎么隔离、APK 签名怎么验证身份、SELinux 怎么限制系统服务、SDK 隔离、Play Protect 扫描机制。

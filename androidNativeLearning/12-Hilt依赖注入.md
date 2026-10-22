@@ -464,4 +464,4 @@ object FakeNetworkModule {
 
 ---
 
-下一篇 `13-Room 与 DataStore 持久化.md`,把 NotedX 的数据存储层搭起来——Room 怎么定义 Entity / Dao / Database,如何用 Flow 暴露查询、用 `suspend` 做插入更新,DataStore 怎么存"用户偏好"。读完这一篇,NotedX 就能持久化笔记。
+下一篇 `13-Room与DataStore持久化.md`,把 NotedX 的数据存储层搭起来——Room 怎么定义 Entity / Dao / Database,如何用 Flow 暴露查询、用 `suspend` 做插入更新,DataStore 怎么存"用户偏好"。读完这一篇,NotedX 就能持久化笔记。

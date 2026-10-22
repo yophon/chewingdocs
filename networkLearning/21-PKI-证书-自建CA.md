@@ -820,4 +820,4 @@ PKI 看起来复杂,**抓住三件事就清晰**:
 2. **2026 年 Let's Encrypt + cert-manager / acme.sh 自动化**——别再手动签
 3. **内部用自建 CA,公网用公共 CA**——别让 internal-* 子域进 CT log
 
-下一篇:`22-HTTP-1.1-深度.md`——回到应用层,讲 HTTP/1.1 这个 1997 年的协议**为什么撑了 25 年**、**Keep-Alive / Pipelining 怎么省 RTT**、**队头阻塞为什么逼出了 HTTP/2**、**Chunked Transfer-Encoding 是怎么玩的**(`Transfer-Encoding: chunked` 那个奇怪的格式怎么解析)、**Content-Length / Connection / Host 三大头怎么协作**——你以为 1.1 简单,实际上每个 HTTP 服务器作者都被它的细节坑过。
+下一篇:`22-HTTP-1.1深度.md`——回到应用层,讲 HTTP/1.1 这个 1997 年的协议**为什么撑了 25 年**、**Keep-Alive / Pipelining 怎么省 RTT**、**队头阻塞为什么逼出了 HTTP/2**、**Chunked Transfer-Encoding 是怎么玩的**(`Transfer-Encoding: chunked` 那个奇怪的格式怎么解析)、**Content-Length / Connection / Host 三大头怎么协作**——你以为 1.1 简单,实际上每个 HTTP 服务器作者都被它的细节坑过。

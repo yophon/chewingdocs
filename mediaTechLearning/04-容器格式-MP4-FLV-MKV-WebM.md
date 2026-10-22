@@ -124,4 +124,4 @@ ffmpeg -i input.mkv -c copy output.mp4
 4. **MP4 网页播放记得 faststart**。
 5. **MediaRecorder 输出要检查 MIME**——不要假设录出来就是 MP4。
 
-下一篇:`05-编码格式:H.264 / H.265 / VP9 / AV1 / AAC / Opus.md`。
+下一篇:`05-编码格式-H264-H265-VP9-AV1-AAC-Opus.md`。

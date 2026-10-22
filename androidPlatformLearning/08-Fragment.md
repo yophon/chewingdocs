@@ -406,4 +406,4 @@ companion object {
 
 ---
 
-下一篇 `09-Service 三种形态与后台限制收紧史.md`,讲 Android 后台执行的核心组件 Service:Started / Bound / Foreground 三种形态、API 26 后台限制的根源、为什么 WorkManager 取代了大部分 Service 用法、什么场景仍然必须用前台服务。
+下一篇 `09-Service.md`,讲 Android 后台执行的核心组件 Service:Started / Bound / Foreground 三种形态、API 26 后台限制的根源、为什么 WorkManager 取代了大部分 Service 用法、什么场景仍然必须用前台服务。

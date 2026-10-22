@@ -277,4 +277,4 @@ LLM 修
 
 ---
 
-下一篇:`10-Memory与CLAUDE.md.md`,讲项目级 / 用户级 memory 文件、@import 链接其他 md、好的 CLAUDE.md 长什么样、什么内容该写、什么不该写、和 settings / skill / hook 怎么分工。
+下一篇:`10-Memory与CLAUDE.md`,讲项目级 / 用户级 memory 文件、@import 链接其他 md、好的 CLAUDE.md 长什么样、什么内容该写、什么不该写、和 settings / skill / hook 怎么分工。

@@ -525,4 +525,4 @@ adb shell setprop debug.systrace.tags.enableflags views     # 触发 trace 类�
 
 ---
 
-下一篇 `16-自定义 View onMeasure onLayout onDraw.md`,完整走通"自己写一个 View":什么时候该自定义、`onMeasure` 的尺寸协商、`onLayout` 摆放子 View、`onDraw` 用 Canvas / Paint 画图、触摸事件分发、save/restore state 跨配置变化。
+下一篇 `16-自定义View.md`,完整走通"自己写一个 View":什么时候该自定义、`onMeasure` 的尺寸协商、`onLayout` 摆放子 View、`onDraw` 用 Canvas / Paint 画图、触摸事件分发、save/restore state 跨配置变化。

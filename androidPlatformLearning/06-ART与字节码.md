@@ -403,4 +403,4 @@ fun process(items: List<Item>) {
 
 ---
 
-第一篇结束(01-06)。下一篇 `07-Activity 生命周期与 Task Back Stack.md`,讲 Android "四大组件"的第一个——Activity 的 7 个生命周期回调、Task 与 Back Stack 的关系、`launchMode`(standard / singleTop / singleTask / singleInstance)、配置变化重建机制、SavedInstanceState 的"两层保存"。
+第一篇结束(01-06)。下一篇 `07-Activity生命周期与Task.md`,讲 Android "四大组件"的第一个——Activity 的 7 个生命周期回调、Task 与 Back Stack 的关系、`launchMode`(standard / singleTop / singleTask / singleInstance)、配置变化重建机制、SavedInstanceState 的"两层保存"。
