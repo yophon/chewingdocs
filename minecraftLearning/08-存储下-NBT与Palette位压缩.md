@@ -4,7 +4,7 @@
 
 答案是两层:外层是 **NBT**(一种通用的二进制树格式,序列化几乎所有逐实例数据),内层最关键的是 **Palette 位压缩**(把 4096 个方块压到极小)。这一篇就专讲这两样,并解释为什么它们是 Minecraft "能省则省"的存储基石。
 
-> 一句话先记住:**NBT 是 Minecraft 万物的序列化语言,Palette 位压缩是体素数据省空间的核心招数;而内存里的方块容器和磁盘上的结构几乎同构,所以加载几乎不用"翻译"。**
+> 一句话先记住:**NBT 是 Minecraft 万物的序列化语言,Palette 位压缩是体素数据省空间的核心招数;内存里的方块容器和磁盘上的结构很接近,所以加载时只需要少量"翻译"。**
 
 ---
 
@@ -63,7 +63,7 @@ NBT 全称 **Named Binary Tag**,是 Notch 早年设计的序列化格式。概�
 
 ```text
 (根 Compound)
-├── DataVersion        : Int    世界数据版本号(跨版本迁移用)
+├── DataVersion        : Int    最后写这个区块的游戏版本的数据版本号(跨版本迁移用)
 ├── xPos / zPos / yPos : Int    chunk 坐标 + 最低 section 的 y
 ├── Status             : String 生成阶段(empty→…→full)
 ├── sections           : List   每个元素是一个 16³ section
@@ -76,13 +76,15 @@ NBT 全称 **Named Binary Tag**,是 Notch 早年设计的序列化格式。概�
 ├── Heightmaps         : Compound 几张高度图,每张是 Long_Array(每列 9 bit)
 ├── block_ticks        : List   还没结算的方块 scheduled tick
 ├── fluid_ticks        : List   还没结算的流体 tick(和方块 tick 分开)
-├── InhabitedTime      : Long   玩家在此 chunk 累计停留时间(影响刷怪/难度)
+├── InhabitedTime      : Long   玩家在此 chunk 累计停留时间(影响区域难度,第 15 篇)
 └── PostProcessing / structures / …
 ```
 
+(以 1.18–26.2 的格式为准。字段细节还在演进:26.3 把调色板每一项里的 `Name` / `Properties` 改成了小写的 `id` / `properties`;26.4 的快照又把生物群系从 4×4×4 改成了逐方块存储。结构思路不变。)
+
 几个值得注意的点:
 
-- **`Status` 是分阶段生成的产物**:地形生成是一条流水线(`empty` → `structure_starts` → … → `full`),跨 chunk 的结构(村庄、洞穴)要求邻居先到某阶段,所以每个 chunk 都记着自己生成到哪一步了。
+- **`Status` 是分阶段生成的产物**:地形生成是一条流水线(`empty` → `structure_starts` → … → `full`),跨 chunk 的结构(村庄、洞穴)要求邻居先到某阶段,所以每个 chunk 都记着自己生成到哪一步了。已探索区域边缘那圈"生成了一半"的区块,也会带着自己的 `Status` 被存下来——这又一次说明区块是生成过就存,而不是改过才存。
 - **`block_ticks` / `fluid_ticks` 是分开的两条队列**:对应 Tick 系统里方块和流体各自独立的调度。chunk 卸载时,没结算完的延迟任务必须一起持久化,否则水流会"凝固"在半路。
 - **实体不在这里**:1.17 起,实体被搬到**独立的 `entities/` region 文件**(POI 兴趣点也单独存 `poi/`)。把实体和方块分文件,可以在不加载满功能 chunk 的情况下处理它们。
 - **`Heightmaps` 用 Long_Array 打包**:每个 xz 列存一个高度值,**每列 9 bit**(因为世界高度可达数百格,8 bit 不够),整张图用打包进 long 数组的方式存——这和下面讲的方块调色板是同一套位打包思路。
@@ -100,21 +102,31 @@ palette : ["minecraft:air", "minecraft:stone", "minecraft:dirt", "minecraft:coal
 data    : Long_Array,存 4096 个"在 palette 里的下标"
 ```
 
-- **palette** 只列出本 section 实际出现过的方块状态,上例只有 4 种。
-- **data** 的每个格子不存完整 ID,只存"它是 palette 里的第几个"。4 种只需 **2 bit**,而不是 15 bit。
+- **palette** 只列出本 section 实际出现过的方块状态,上例只有 4 种。注意它在磁盘上写的是**名字 + 属性**(`{Name: "minecraft:stone"}`、`{Name: "minecraft:oak_stairs", Properties: {facing: "east", …}}`),不是数字 ID。数字 ID 会随版本、随装的 mod 变化,名字才稳定(第 11 篇)。
+- **data** 的每个格子不存完整 ID,只存"它是 palette 里的第几个"。4 种理论上 2 bit 就能区分,但方块调色板有个下限,实际按 **4 bit** 存(见下面的规则)——依然远小于 15 bit。
 
 ### bitsPerEntry 规则
 
-每格用多少位,由调色板大小决定:
+磁盘上每格用多少位,由调色板大小决定:
 
 ```text
-bitsPerEntry = max(4, ceil(log2(palette.length)))
+bitsPerEntry = max(4, ceil(log2(palette.length)))     // 方块;palette 只有 1 项时不写 data
 ```
 
-- 调色板 ≤ 16 种 → 仍按 **4 bit/格**(有个下限 4:再小也不省多少,反而增加碎片处理复杂度)。
+- 调色板 2–16 种 → 仍按 **4 bit/格**(下限 4:再小也省不了多少,而 4 bit 正好让一个 long 装 16 个下标)。
 - 17–32 种 → 5 bit;33–64 种 → 6 bit;以此类推,位宽随种类自动增大。
-- 当 bitsPerEntry 涨过某个阈值(约 **9 bit**)→ 干脆**放弃局部调色板,直接存全局方块状态 ID**(global palette)。因为种类太多时,维护一张局部调色板本身也不划算了。
-- **极端退化**:如果整个 section 只有 **1 种**方块(比如全空气、全石头),调色板里就一项,下标永远是 0 ——这时 **`data` 数组可以整个省略**。大片均质地形就靠这一条被压到几乎为零。
+- **极端退化**:如果整个 section 只有 **1 种**方块(比如全空气、全石头),调色板里就一项,下标永远是 0 ——这时 **`data` 数组整个省略**。大片均质地形就靠这一条被压到几乎为零。
+
+内存里的 `PalettedContainer`(第六节)按位宽分四档,和磁盘规则一一对应,只在最后一档不同:
+
+| 调色板项数 | 内存里的调色板 | 每格位数 |
+| --- | --- | --- |
+| 1 | 单值(single value) | 0,不分配数组 |
+| 2–16 | 线性表(linear) | 4 |
+| 17–256 | 哈希表(hashmap) | 5–8 |
+| > 256 | **全局调色板**:不再维护局部表,每格直接存全局 BlockState ID | 当前版本约 15 |
+
+也就是说,一个 section 里方块种类超过 256 种时,内存里会放弃局部调色板(维护它已经不划算);但写盘时仍会按实际出现的种类重新整理出一张局部调色板,所以磁盘格式始终是"名字列表 + 下标数组"。生物群系用的是同一套机制,只是阈值更小(1–3 bit 用局部表,再多就用全局)。
 
 这就是为什么"地下一大片石头"和"天上一大片空气"几乎不占存储:它们各自退化成"调色板单值 + 无 data"。
 
@@ -173,17 +185,17 @@ blockState = palette[paletteIdx]
 
 ---
 
-## 六、内存与磁盘同构:为什么加载这么快
+## 六、内存与磁盘结构相近:为什么加载不贵
 
-最后一个关键设计:**运行时内存里的方块容器,和磁盘上的结构几乎是同一个东西。**
+最后一个关键设计:**运行时内存里的方块容器,和磁盘上的结构是同一个思路。**
 
-内存里每个 section 用一个 **`PalettedContainer`** 持有方块,它内部就是"调色板 + 紧凑位数组",和我们前面讲的 `block_states = { palette, data }` 一模一样。于是:
+内存里每个 section 用一个 **`PalettedContainer`** 持有方块,它内部也是"调色板 + 紧凑位数组",和前面讲的 `block_states = { palette, data }` 对得上。于是:
 
-- **加载**:NBT 解析出 `palette` + `data` → 几乎可以直接搬进 `PalettedContainer`,不需要把每个方块解包成独立对象再重建。
-- **存盘**:`PalettedContainer` 几乎原样序列化回 `palette` + `data`。
-- 运行中方块变化时,`PalettedContainer` 就地更新:调色板按需增删,bitsPerEntry 自动伸缩(种类变多就扩位重排,变少可压缩)。
+- **加载**:NBT 解析出 `palette` + `data`。调色板那几项要按名字查注册表,还原成内存里的 BlockState 引用;位数组通常能直接拿来用(只有种类超过 256、内存要换成全局调色板时,才需要逐格重新编码)。不需要把 4096 个方块逐个解包成独立对象再重建。
+- **存盘**:按 section 里**实际出现**的方块重新整理一张局部调色板,连同位数组写出去。
+- **运行中**方块变化时,`PalettedContainer` 就地更新:出现新种类就往调色板里加,超出当前位宽的容量时扩位、重排数组(比如从 16 种涨到 17 种,4 bit 扩成 5 bit)。反过来,某种方块被挖光后,调色板**不会**立刻缩回去——那一项只是闲着,等下次存盘重新整理时才被丢掉。
 
-这种"内存结构 = 磁盘结构"的同构设计,省掉了序列化/反序列化里最贵的"对象图重建",是 Minecraft 能在"无限世界 + 20 TPS"下又快又省的根本原因之一。
+这种"内存结构 ≈ 磁盘结构"的设计,省掉了序列化/反序列化里最贵的"对象图重建",是区块加载快、内存占用小的重要原因之一。
 
 ---
 
@@ -192,7 +204,16 @@ blockState = palette[paletteIdx]
 把这一篇放回整条存储链路:
 
 - **承接上篇(Region/Anvil)**:上一篇负责"在 `.mca` 文件里按扇区找到一段压缩字节、解压";这一篇负责解释解压后那棵 **NBT 树**怎么读,以及其中最关键的 **block_states** 怎么用 palette 位压缩表达 4096 个方块。两篇合起来,就是"一个 chunk 从磁盘字节到方块数组"的完整往返。
-- **呼应渲染篇**:渲染时内存里的 `PalettedContainer` 和这里磁盘上的 palette 结构同构——存储的省空间技巧和渲染的"只画可见面",是同一份数据在两端各自的优化,互为对偶。
+- **呼应渲染篇**:渲染时 mesher 读的内存 `PalettedContainer`,和这里磁盘上的 palette 是同一个思路——存储的省空间技巧和渲染的"只画可见面",是同一份数据在两端各自的优化。
 - **呼应生成篇**:`Status` 字段对应分阶段地形生成;`DataVersion` 则贯穿整个世界的版本演进。
 
 一句话收束:**NBT 负责"怎么把任意逐实例数据落成字节",Palette 位压缩负责"把海量方块压到最小",DataVersion+DFU 负责"让这些字节跨版本还能读"。** 三者合起来,才撑得住一个可以无限生长、还能十年向后兼容的体素世界。
+
+---
+
+## 参考
+
+- [NBT format](https://minecraft.wiki/w/NBT_format)(Minecraft Wiki)
+- [Chunk format](https://minecraft.wiki/w/Chunk_format)(Minecraft Wiki)
+- [Java Edition protocol/Chunk format](https://minecraft.wiki/w/Java_Edition_protocol/Chunk_format)(Minecraft Wiki)
+- [Data version](https://minecraft.wiki/w/Data_version)(Minecraft Wiki)
