@@ -73,11 +73,15 @@ npm run docs:dev
 npm run docs:check
 ```
 
-`docs:check` 会执行 VitePress 严格构建。配置中不再忽略死链，链接或路由异常会让构建失败。
+`docs:check` 会先检查 series 表、写作计划篇数和本地链接，再执行 VitePress 严格构建。配置中不再忽略死链，链接或路由异常会让构建失败。
+
+新增或删除章节后，本地可以运行 `npm run docs:sync-series` 更新 series 表；忘了也没关系，CI 会自动同步。
 
 ## 发布
 
-推送到 `main` 后，GitHub Actions 会运行 VitePress 构建并发布 `docs/.vitepress/dist` 到 GitHub Pages。
+推送到 `main` 后，GitHub Actions 会先同步 series 表（有变化时自动提交一个 `docs: 同步 series 表`），再运行检查与构建，最后用 `actions/deploy-pages` 把 `docs/.vitepress/dist` 发布到 GitHub Pages。Pull Request 只构建不发布。
+
+页面元数据（路由 hash 表和站点配置）通过 VitePress 的 `metaChunk` 抽成单独的 JS 文件，不再内联到每个 HTML 里。
 
 ## 目录说明
 

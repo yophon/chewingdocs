@@ -54,7 +54,7 @@ console.log("Series tables OK");
 
 function readBlock({ file, start, end }) {
   const fullPath = path.join(repoRoot, file);
-  const source = fs.readFileSync(fullPath, "utf8");
+  const source = fs.readFileSync(fullPath, "utf8").replace(/\r\n/g, "\n");
   const startIndex = source.indexOf(start);
   const endIndex = source.indexOf(end);
 

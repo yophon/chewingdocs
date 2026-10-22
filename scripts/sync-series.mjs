@@ -37,7 +37,7 @@ const blocks = [
 
 function syncBlock({ file, start, end, content }) {
   const fullPath = path.join(repoRoot, file);
-  const source = fs.readFileSync(fullPath, "utf8");
+  const source = fs.readFileSync(fullPath, "utf8").replace(/\r\n/g, "\n");
   const pattern = new RegExp(`(${escapeRegExp(start)}\\n)[\\s\\S]*?(\\n${escapeRegExp(end)})`);
 
   if (!pattern.test(source)) {

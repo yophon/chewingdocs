@@ -148,6 +148,7 @@ export default defineConfig({
   base: "/chewingdocs/",
   cleanUrls: true,
   lastUpdated: true,
+  metaChunk: true,
   vite: {
     build: {
       chunkSizeWarningLimit: 3000
