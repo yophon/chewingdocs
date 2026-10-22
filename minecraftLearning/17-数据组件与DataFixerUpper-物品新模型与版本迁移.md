@@ -73,10 +73,14 @@
 既然实例是"对默认的覆盖",那就必然需要一个操作:**移除某个本来默认存在的组件**。命令里写成 `!minecraft:component`(带感叹号),意思是"在这个物品上把这个默认组件去掉"。
 
 ```
-/give @s minecraft:diamond_sword[!minecraft:enchantment_glint_override]
-                                  ↑ 去掉默认的某组件
-/give @s minecraft:stick[minecraft:food={nutrition:4}]   ← 给棍子加上“能吃”
+/give @s minecraft:apple[!minecraft:consumable]
+                         ↑ 去掉苹果默认的"可食用"组件,得到一个吃不了的苹果
+
+/give @s minecraft:stick[minecraft:consumable={},minecraft:food={nutrition:4,saturation:2.4}]
+                         ↑ 反过来,给棍子加上"能吃"和营养值
 ```
+
+(组件本身也在演进:1.21.2 起,"能不能吃、吃多久"拆到了 `consumable` 组件里,`food` 只记营养值;在 1.20.5–1.21.1,给棍子写一个 `food` 组件就够了。这又一次说明了组件模型的好处——拆分一个组件,只影响用到它的地方。)
 
 第一次见 `!` 前缀的人都会愣一下:不是"设为空",而是"从默认集合里删掉这一项"。这正是"实例 = 对默认的 diff"模型的直接体现——diff 既能加、能改,也能减。
 
@@ -110,7 +114,7 @@
 
 ### DataVersion:每份数据都带着"我是哪一版"
 
-回顾第 02、08 篇:几乎每份存档数据(`level.dat`、每个 chunk、每个实体)都带一个 **DataVersion**(一个单调递增的整数)。它就是迁移的锚点——加载时,游戏先看这份数据的 DataVersion,和当前版本一比,就知道"中间隔了哪些结构变更,要补哪些迁移"。
+回顾第 02、08 篇:几乎每份存档数据(`level.dat`、每个 chunk、`entities/` 里每个区块的实体数据、玩家数据)都带一个 **DataVersion**(一个单调递增的整数)。它就是迁移的锚点——加载时,游戏先看这份数据的 DataVersion,和当前版本一比,就知道"中间隔了哪些结构变更,要补哪些迁移"。
 
 ### type schema + 按版本叠加的 fixer
 
@@ -165,3 +169,12 @@ DataVersion 升级链(示意):
 - 和**第 09 篇**方块"不存逐实例数据"对照:物品的"默认组件 + 实例存 diff",是同一条主线在物品层的复现——**能共享的就不复制**。
 
 所以这一篇其实是整个系列那条暗线的一个集中体现:Minecraft 一直在把"自由、弱类型、什么都能塞"的数据,慢慢收紧成"强类型、可校验、可迁移"的结构;而每一次收紧地基,背后都得有 DataFixerUpper 这样的迁移机制兜底,旧世界才不会被丢下。
+
+---
+
+## 参考
+
+- [Data component format](https://minecraft.wiki/w/Data_component_format)(Minecraft Wiki)
+- [Data component format/consumable](https://minecraft.wiki/w/Data_component_format/consumable)(Minecraft Wiki)
+- [Data version](https://minecraft.wiki/w/Data_version)(Minecraft Wiki)
+- [Mojang/DataFixerUpper](https://github.com/Mojang/DataFixerUpper)(GitHub)
