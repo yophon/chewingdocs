@@ -6,7 +6,7 @@
 
 - **补工程基础**：云服务与互联网基础常识、网络、操作系统、算法、程序员的数学。
 - **做业务系统**：后端学习、系统设计、分布式系统、DevOps / SRE、数据工程。
-- **做 AI 应用与平台**：AI 学习、AI Infra、数据工程、Claude Code。
+- **做 AI 应用与平台**：AI 学习、AI Infra、数据工程、Claude Code、DeepSeek Harness。
 - **做客户端与产品**：前端学习、Flutter、Android 原生开发、Android 平台基础、iOS 原生开发。
 - **提升代码判断**：设计模式、解释器、Go、Rust、安全、Git、终端工程。
 
@@ -46,6 +46,7 @@
 | 解释器 | [解释器总览](/interpreterLearning/01-解释器总览) |
 | 安全 | [安全总览](/securityLearning/01-安全总览) |
 | Claude Code | [Claude-Code总览与心智](/claudeLearning/01-Claude-Code总览与心智) |
+| DeepSeek Harness | [DeepSeek-Harness总览与心智](/dshLearning/01-DeepSeek-Harness总览与心智) |
 | 杂项 | [文件与音视频分发原理](/杂项/文件与音视频分发原理) |
 
 [series-table:end]: #

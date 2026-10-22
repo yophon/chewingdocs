@@ -65,6 +65,7 @@ function groupedTopicItems(): DefaultTheme.NavItemChildren[] {
         seriesItem("aiLearning"),
         seriesItem("aiInfraLearning"),
         seriesItem("claudeLearning"),
+        seriesItem("dshLearning"),
         seriesItem("dataEngineering")
       ]
     },
