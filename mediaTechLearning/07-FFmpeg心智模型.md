@@ -130,4 +130,4 @@ ffprobe -show_format -show_streams input.mp4
 4. **多流文件不用 `-map`**——输出丢音轨很常见。
 5. **不看 stderr**——FFmpeg 的关键信息都在标准错误输出。
 
-下一篇:`08-ffmpeg / ffprobe 常用命令.md`。
+下一篇:`08-ffmpeg-ffprobe常用命令.md`。

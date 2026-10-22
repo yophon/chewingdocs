@@ -2,7 +2,7 @@
 
 按主题整理的工程知识库。目标不是堆 API 手册，而是把工程师常用的知识拆成一组可连续阅读的系列：先建立心智模型，再进入工具、架构、排障、选型和真实工程取舍。
 
-当前内容覆盖 Web、AI、AI Infra、后端、系统设计、分布式、网络、操作系统、DevOps / SRE、数据工程、音视频工程、算法、程序员数学、Git、终端工程、Go、Rust、Flutter、Android、iOS、Godot、解释器、安全、Claude Code、设计模式、云服务等方向。
+当前内容覆盖 Web、AI、AI Infra、后端、系统设计、分布式、网络、操作系统、DevOps / SRE、数据工程、音视频工程、算法、程序员数学、Git、终端工程、Go、Rust、移动端通用知识、Flutter、Android、iOS、Godot、Minecraft 技术原理、解释器、安全、Claude Code、设计模式、云服务等方向。
 
 在线阅读：<https://yophon.github.io/chewingdocs/>
 
@@ -73,7 +73,7 @@ npm run docs:dev
 npm run docs:check
 ```
 
-`docs:check` 会先检查 series 表、写作计划篇数和本地链接，再执行 VitePress 严格构建。配置中不再忽略死链，链接或路由异常会让构建失败。
+`docs:check` 会先检查 series 表、写作计划篇数、本地链接（包括正文里用行内代码写的章节文件名，如 `05-链表.md`）和代码块围栏，再执行 VitePress 严格构建。配置中不再忽略死链，链接或路由异常会让构建失败。
 
 新增或删除章节后，本地可以运行 `npm run docs:sync-series` 更新 series 表；忘了也没关系，CI 会自动同步。
 

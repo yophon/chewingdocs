@@ -56,8 +56,8 @@
 - `21-Axum-现代Web框架入门.md` —— 路由、中间件与状态共享
 - `22-数据库交互-SQLx与SeaORM.md` —— 异步查询与编译期 SQL 检查
 - `23-Serde-序列化与反序列化.md` —— 统治整个生态的数据转换库
-- `24-自动化测试与CI/CD.md` —— 单元测试、集成测试与 GitHub Actions
-- `25-实战：写一个带 Auth 的 RESTful API.md` —— 把 Web 生态串起来
+- `24-自动化测试与CI_CD.md` —— 单元测试、集成测试与 GitHub Actions
+- `25-实战：写一个带Auth的RESTful_API.md` —— 把 Web 生态串起来
 
 ### 第五部分：底层深入与跨界
 

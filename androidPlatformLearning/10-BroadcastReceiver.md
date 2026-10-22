@@ -397,4 +397,4 @@ adb shell am broadcast -a android.intent.action.ACTION_POWER_CONNECTED
 
 ---
 
-下一篇 `11-ContentProvider URI 协议与跨进程数据共享.md`,讲 Android 唯一"按 URL 风格查数据"的组件——ContentProvider:为什么 Contacts / Calendar / MediaStore 都暴露为 Provider、`content://` URI 怎么解析、Cursor 怎么跨进程传、FileProvider 怎么分享私有文件给其他 App。
+下一篇 `11-ContentProvider.md`,讲 Android 唯一"按 URL 风格查数据"的组件——ContentProvider:为什么 Contacts / Calendar / MediaStore 都暴露为 Provider、`content://` URI 怎么解析、Cursor 怎么跨进程传、FileProvider 怎么分享私有文件给其他 App。

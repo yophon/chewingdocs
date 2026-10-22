@@ -182,4 +182,4 @@ NotedX 这个系列样例应用钉死 **minSdk = 26 / targetSdk = 35**。
 
 ---
 
-下一篇 `02-项目骨架与 Gradle 构建工具链.md`,把 `build.gradle.kts`、`libs.versions.toml`、AGP × Kotlin × Compose Compiler 版本对齐、KSP 全套钉死,给出可直接复制的 NotedX 完整构建脚本。
+下一篇 `02-项目骨架与构建工具链.md`,把 `build.gradle.kts`、`libs.versions.toml`、AGP × Kotlin × Compose Compiler 版本对齐、KSP 全套钉死,给出可直接复制的 NotedX 完整构建脚本。

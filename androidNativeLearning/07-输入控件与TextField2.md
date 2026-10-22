@@ -379,4 +379,4 @@ OutlinedTextField(
 
 ---
 
-下一篇 `08-布局 Modifier 与自适应.md`,把 Compose 的布局系统讲清楚:`Row` / `Column` / `Box` 的本质、`Modifier` 链顺序、weight / fillMaxSize / wrapContentSize 的区别、`ConstraintLayout` 何时该用、多语言/字体/可访问性的 inset 一并收口。
+下一篇 `08-布局与Modifier.md`,把 Compose 的布局系统讲清楚:`Row` / `Column` / `Box` 的本质、`Modifier` 链顺序、weight / fillMaxSize / wrapContentSize 的区别、`ConstraintLayout` 何时该用、多语言/字体/可访问性的 inset 一并收口。

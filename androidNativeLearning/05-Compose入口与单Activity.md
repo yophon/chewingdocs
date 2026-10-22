@@ -408,4 +408,4 @@ Scaffold { innerPadding ->
 
 ---
 
-下一篇 `06-重组、状态与 remember.md`,把 Compose 的灵魂——重组(recomposition)讲透。`remember` / `mutableStateOf` / `derivedStateOf` / `LaunchedEffect` / `DisposableEffect` 各自为什么存在,什么时候用哪个。这一篇没读懂,后面所有 Compose 代码都是抄写。
+下一篇 `06-重组状态与remember.md`,把 Compose 的灵魂——重组(recomposition)讲透。`remember` / `mutableStateOf` / `derivedStateOf` / `LaunchedEffect` / `DisposableEffect` 各自为什么存在,什么时候用哪个。这一篇没读懂,后面所有 Compose 代码都是抄写。

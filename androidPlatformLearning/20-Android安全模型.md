@@ -456,4 +456,4 @@ Android 每月发安全公告:[https://source.android.com/security/bulletin](htt
 
 ---
 
-下一篇 `21-内存与泄漏:Java 引用模型 + LeakCanary 心智.md`,讲 Android App 内存的全部:Java 引用类型(强 / 软 / 弱 / 虚)、GC 模型、典型泄漏模式、LeakCanary 工作原理、`MAT` / `Profiler` 怎么定位泄漏点。
+下一篇 `21-内存与泄漏.md`,讲 Android App 内存的全部:Java 引用类型(强 / 软 / 弱 / 虚)、GC 模型、典型泄漏模式、LeakCanary 工作原理、`MAT` / `Profiler` 怎么定位泄漏点。

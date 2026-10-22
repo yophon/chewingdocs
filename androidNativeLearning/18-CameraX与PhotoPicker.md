@@ -471,4 +471,4 @@ fun NoteEditorScreen(vm: NoteEditorViewModel = hiltViewModel()) {
 
 ---
 
-下一篇 `19-系统集成:Intent、AppLinks、Glance Widget.md`,讲 App 与系统 / 其他 App 的边界:`Intent` 隐式调用(分享、打开链接)、`App Links`(https 链接直达 App)、`Glance Widget`(桌面小组件)。这是让 App "融入系统"的最后一步。
+下一篇 `19-系统集成Intent与AppLinks.md`,讲 App 与系统 / 其他 App 的边界:`Intent` 隐式调用(分享、打开链接)、`App Links`(https 链接直达 App)、`Glance Widget`(桌面小组件)。这是让 App "融入系统"的最后一步。

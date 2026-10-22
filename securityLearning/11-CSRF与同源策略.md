@@ -1,4 +1,4 @@
-## CSRF / SameSite / SOP / CORS:浏览器同源模型与四种绕过
+# CSRF / SameSite / SOP / CORS:浏览器同源模型与四种绕过
 
 讲 CSRF 最常见的开场白是「攻击者伪造一个表单让你点」,**这种讲法害人不浅**——它让人觉得 CSRF 是「钓鱼」的一种,装个 Token 就完事。真相是:**CSRF 是浏览器同源模型的结构性副作用**——「自动带 Cookie」这个设计本来是为了 SSO 体验,在 CSRF 场景下却变成了攻击者的弹药库。webLearning/35 一节带过了「CSRF Token」是什么;**这一篇把整个浏览器同源模型(SOP / CORS / SameSite / Cookie 三件套)一次讲透**,看完你应该能在白板前回答「为什么 SameSite=Lax 不能完全替代 CSRF Token」「为什么 CORS 不是用来防 CSRF 的」。
 
@@ -6,15 +6,15 @@
 
 ---
 
-### 一、同源策略(SOP):浏览器最古老的安全边界
+## 一、同源策略(SOP):浏览器最古老的安全边界
 
-#### 1.1 为什么浏览器需要 SOP
+### 1.1 为什么浏览器需要 SOP
 
 浏览器是个**极其危险的运行环境**——它要在同一个进程里同时跑 N 个互不信任的网站的代码:你打开了银行的 tab,又打开了一个论坛的 tab,论坛的 JS 不能去读银行 tab 的 DOM、不能读银行的 Cookie、不能伪造一个银行的 fetch 请求并拿到响应。**没有这条规则,任何一个网站只要让你访问一下就能掏空你所有其他网站**。
 
 1995 年 Netscape 引入 JS 的时候就意识到这个问题,所以从一开始就立了一条规矩:**Same-Origin Policy**——同源的资源互相完全信任,跨源的资源默认完全隔离。
 
-#### 1.2 origin 的精确定义
+### 1.2 origin 的精确定义
 
 ```
 origin = scheme + host + port
@@ -38,7 +38,7 @@ https://bank.com         vs  https://bank.com#hash   → 同源(fragment 不影�
 
 **子域名不算同源**——这点最容易记错。`a.bank.com` 和 `b.bank.com` 是跨源的,如果想让它们互相访问,要么用 `document.domain`(已被废弃),要么用 postMessage / CORS。
 
-#### 1.3 SOP 到底拦了什么
+### 1.3 SOP 到底拦了什么
 
 SOP 是一条**默认拒绝**规则,但它**只拦"读"不拦"写"**:
 
@@ -76,9 +76,9 @@ SOP 是一条**默认拒绝**规则,但它**只拦"读"不拦"写"**:
 
 ---
 
-### 二、CSRF 原理:Cookie 自动携带是双刃剑
+## 二、CSRF 原理:Cookie 自动携带是双刃剑
 
-#### 2.1 浏览器为什么自动带 Cookie
+### 2.1 浏览器为什么自动带 Cookie
 
 HTTP 是无状态的,服务器靠 Cookie 识别用户。**Cookie 的核心规则**:只要请求的目标域和 Cookie 的 domain 匹配,**不管这个请求是从哪个页面发起的**,浏览器都会带上。
 
@@ -96,7 +96,7 @@ HTTP 是无状态的,服务器靠 Cookie 识别用户。**Cookie 的核心规则
 
 **这就是 CSRF(Cross-Site Request Forgery)的本质**:**攻击者不需要偷 Cookie,他借浏览器之手用你的 Cookie 发请求**。这和 XSS 的差别要看清——XSS 是攻击者在你的域内执行代码(JS 跑在 bank.com 的 origin 里),**CSRF 是攻击者在他自己的域内"诱发"你的浏览器替他打**(JS 跑在 evil.com,但请求发到 bank.com)。
 
-#### 2.2 CSRF 成立的三个条件
+### 2.2 CSRF 成立的三个条件
 
 不是任何接口都能 CSRF——成立需要同时满足:
 
@@ -106,7 +106,7 @@ HTTP 是无状态的,服务器靠 Cookie 识别用户。**Cookie 的核心规则
 
 **第三条最容易被忽略**。如果接口只接受 `Content-Type: application/json`,**纯 HTML 表单是构造不出 JSON 请求的**(form 只能发上面那三种 Content-Type),CSRF 就被天然挡住——但这条防线脆得吓人,见下文 GET CSRF / JSON CSRF 段落。
 
-#### 2.3 真实事故:某银行的 GET 转账接口
+### 2.3 真实事故:某银行的 GET 转账接口
 
 ```
 GET /transfer?from=ME&to=12345&amount=10000 HTTP/1.1
@@ -117,7 +117,7 @@ Cookie: SESSIONID=...
 
 ---
 
-### 三、最小 PoC:CSRF 是怎么发生的
+## 三、最小 PoC:CSRF 是怎么发生的
 
 漏洞接口(典型 Flask):
 
@@ -151,9 +151,9 @@ def change_email():
 
 ---
 
-### 四、CSRF 防御四代
+## 四、CSRF 防御四代
 
-#### 4.1 第一代:Referer / Origin 校验
+### 4.1 第一代:Referer / Origin 校验
 
 ```python
 def is_safe_request():
@@ -170,7 +170,7 @@ def is_safe_request():
 
 **正确做法**:严格白名单,精确匹配 host,Referer 缺失视为不可信(对写操作)。
 
-#### 4.2 第二代:Synchronizer Token Pattern(同步 Token)
+### 4.2 第二代:Synchronizer Token Pattern(同步 Token)
 
 服务器生成一个**不可预测的 Token**,放在表单隐藏字段,提交时校验。
 
@@ -197,7 +197,7 @@ def change_email():
 - 用 HMAC 把 sessionID + nonce 签出 Token,服务器无状态校验(无 session 存储压力)
 - **CSRF Token 不是密码学秘密,但要不可预测**——用 `secrets.token_urlsafe`,不要 `random.random`
 
-#### 4.3 第三代:Double Submit Cookie(双重提交 Cookie)
+### 4.3 第三代:Double Submit Cookie(双重提交 Cookie)
 
 无状态的版本——服务器把同一个 Token 既种到 Cookie 又放进表单/Header,提交时检查两个值是否相等。
 
@@ -214,7 +214,7 @@ Set-Cookie: csrf=abcd1234
 
 **坑**:必须确保 Cookie 不被子域写入(子域可以写父域 Cookie 的话,xss.bank.com 上的攻击能伪造 csrf cookie),用 `__Host-` 前缀的 Cookie 来强制。
 
-#### 4.4 第四代:SameSite Cookie(浏览器层面解决)
+### 4.4 第四代:SameSite Cookie(浏览器层面解决)
 
 这是最干净的方案——**让浏览器自己决定哪些跨源请求带 Cookie**。Chrome 80+(2020)默认 `Lax`,从那一刻起 CSRF 攻击面减小了一个数量级。
 
@@ -238,7 +238,7 @@ Set-Cookie: SESSIONID=...; SameSite=None; Secure   <-- 必须带 Secure
 
 **"site" 和 "origin" 不是一回事**——SameSite 用的是 **eTLD+1**(注册域),`a.bank.com` 和 `b.bank.com` 是**同 site** 但**不同 origin**。这就是为什么名字里是 `Site` 不是 `Origin`——它放宽了同 site 间的请求,只严格挡跨 site。
 
-#### 4.5 SameSite 不是银弹:四个剩余攻击面
+### 4.5 SameSite 不是银弹:四个剩余攻击面
 
 不要以为开了 SameSite=Lax 就高枕无忧:
 
@@ -251,9 +251,9 @@ Set-Cookie: SESSIONID=...; SameSite=None; Secure   <-- 必须带 Secure
 
 ---
 
-### 五、CORS:不是安全机制,是"放宽 SOP"的协议
+## 五、CORS:不是安全机制,是"放宽 SOP"的协议
 
-#### 5.1 最常见的误解
+### 5.1 最常见的误解
 
 「我配了 CORS 所以跨源攻击不会发生」——**这句话完全错**。**CORS 是用来让你"故意"放宽 SOP 的协议**,默认不配 CORS,浏览器就按 SOP 严格隔离。**配置 CORS 是在打开一道门,不是在锁一道门**。
 
@@ -264,7 +264,7 @@ Set-Cookie: SESSIONID=...; SameSite=None; Secure   <-- 必须带 Secure
 
 所以「我没开 CORS」**根本不能阻止 CSRF**——跨源 form 提交、跨源 img 请求,这些东西**不受 CORS 管**,浏览器照发不误,只是 JS 读不到响应。**而 CSRF 不在乎响应**。
 
-#### 5.2 简单请求 vs 预检请求
+### 5.2 简单请求 vs 预检请求
 
 CORS 把跨源请求分成两类:
 
@@ -314,7 +314,7 @@ CORS 把跨源请求分成两类:
 
 **预检是浏览器在保护你**——它先问服务器「你欢迎来自 app.com 的 PUT 吗」,服务器同意才放行真实请求。**对于 `Content-Type: application/json` 的写接口,这一步天然挡住了纯 HTML 构造的 CSRF**——HTML 表单发不出 JSON,只能用 fetch,fetch 跨源就要预检,预检过不去就完蛋。
 
-#### 5.3 预检的常见误配
+### 5.3 预检的常见误配
 
 ```http
 # 史诗级错配 #1:回声 Origin
@@ -348,13 +348,13 @@ Access-Control-Allow-Origin: <匹配 .*\.bank\.com 的逻辑>
 
 ---
 
-### 六、四种绕过:从 GET CSRF 到 DNS Rebinding
+## 六、四种绕过:从 GET CSRF 到 DNS Rebinding
 
-#### 6.1 GET CSRF(最古老最常用)
+### 6.1 GET CSRF(最古老最常用)
 
 接口写成 GET,任何 `<img>` / `<a>` / `<link>` 都能触发。SameSite=Lax 不挡顶层 GET 导航,所以「让用户点一下钓鱼链接」就成。**修复:只接受 POST / PUT / DELETE,Web 框架默认开 method 校验**。
 
-#### 6.2 JSON CSRF(2010 年代的故事)
+### 6.2 JSON CSRF(2010 年代的故事)
 
 接口要求 `Content-Type: application/json`,看起来天然防 CSRF——HTML 表单发不出 JSON。**但**:
 
@@ -376,11 +376,11 @@ Content-Type: text/plain
 
 **很多框架的 JSON 解析器对 Content-Type 不严格**,看到内容像 JSON 就解析,结果 CSRF 打穿。**修复**:服务器严格校验 `Content-Type: application/json`,或者强制要求自定义 header(触发预检)。
 
-#### 6.3 Flash 跨域(历史)
+### 6.3 Flash 跨域(历史)
 
 2018 年之前,Flash 的 `crossdomain.xml` 是另一条 CORS 通道,无数公司在根目录放了 `<allow-access-from domain="*"/>`,等价于全开 CORS。**Flash 死了之后这条路废了**——但要知道历史上它是真实威胁,迁移老系统时记得删掉根目录的 crossdomain.xml。
 
-#### 6.4 DNS Rebinding(SOP 的根本缺陷)
+### 6.4 DNS Rebinding(SOP 的根本缺陷)
 
 SOP 是按「host 字符串」判同源的——**但 host 解析到哪个 IP 是 DNS 决定的**。攻击者控制 DNS,可以让浏览器在两次请求之间「同一个 host 指向不同 IP」:
 
@@ -395,9 +395,9 @@ T=2s: evil.com  →  攻击者改 DNS,指向 127.0.0.1(或内网 IP)
 
 ---
 
-### 七、真实事故复盘
+## 七、真实事故复盘
 
-#### 7.1 GitHub OAuth CSRF(2014 前)
+### 7.1 GitHub OAuth CSRF(2014 前)
 
 OAuth 授权码流程里,**回调 URL 应该带 `state` 参数**做 CSRF 防御:
 
@@ -413,17 +413,17 @@ GET /auth/callback?code=xyz&state=随机
 
 **修复**:OAuth state 强制校验,不通过就 403。OAuth 2.1 把 state 列为 MUST。这个坑现在还在中小厂 SSO 实现里反复出现。
 
-#### 7.2 某银行 CSRF 转账(典型案例 / 已脱敏)
+### 7.2 某银行 CSRF 转账(典型案例 / 已脱敏)
 
 接口:`POST /transfer`,form-urlencoded,只靠 Session Cookie 鉴权,无 CSRF Token,无 Origin 校验,SameSite 默认未设。攻击者把 PoC HTML 嵌在第三方广告里,**用户点广告就被自动转账**。漏洞链全部用合规 HTML 功能,没用任何 0day。修复后:加 CSRF Token + SameSite=Lax + Origin 白名单 + 二次验证短信。**四层都加,才叫纵深防御**。
 
-#### 7.3 LiveBeef 内网管控台事件(DNS Rebinding 经典)
+### 7.3 LiveBeef 内网管控台事件(DNS Rebinding 经典)
 
 2018 年研究者披露多款消费级路由器、加密货币钱包桌面客户端、Plex 媒体服务器,因 localhost 服务无认证 + 无 Host 校验,**通过 DNS rebinding 可以从任意网站被攻破**——后续这些产品都加了 Host header 白名单。
 
 ---
 
-### 八、Cookie 三件套:HttpOnly / Secure / SameSite
+## 八、Cookie 三件套:HttpOnly / Secure / SameSite
 
 讨论 CSRF 不能不讲 Cookie 安全属性,三个属性各管一件事,**全开是现代基线**。
 
@@ -445,7 +445,7 @@ Set-Cookie: __Host-csrf=xyz; Path=/; Secure; SameSite=Strict
 
 ---
 
-### 九、怎么把它写进 SDL
+## 九、怎么把它写进 SDL
 
 四道防线,每道都加,缺一不可:
 
@@ -467,7 +467,7 @@ Set-Cookie: __Host-csrf=xyz; Path=/; Secure; SameSite=Strict
 
 ---
 
-### 十、踩坑提醒
+## 十、踩坑提醒
 
 1. **以为 CORS 防 CSRF**——方向反了,CORS 管「读响应」,CSRF 关心「请求发出」
 2. **以为 SameSite=Lax 完全替代 Token**——GET 顶层导航仍然带 Cookie,子域信任面仍然存在

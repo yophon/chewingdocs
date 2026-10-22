@@ -332,4 +332,4 @@ NotedX 全 Kotlin 写,Java 互操作仅在第 13 / 22 篇短暂出现(三方 SDK
 
 ---
 
-下一篇 `04-协程与 Flow:结构化并发.md`,把 Android 上唯一的并发答案讲清楚:`suspend fun` 的本质、`CoroutineScope` 的生命周期绑定、`Dispatchers` 主线程 / IO / Default、取消传播、`Flow` 冷流与 `StateFlow` / `SharedFlow` 热流的区别。这是后面 18 篇异步代码的统一底座。
+下一篇 `04-协程与Flow.md`,把 Android 上唯一的并发答案讲清楚:`suspend fun` 的本质、`CoroutineScope` 的生命周期绑定、`Dispatchers` 主线程 / IO / Default、取消传播、`Flow` 冷流与 `StateFlow` / `SharedFlow` 热流的区别。这是后面 18 篇异步代码的统一底座。

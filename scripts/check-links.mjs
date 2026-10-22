@@ -23,7 +23,7 @@ function walk(dir) {
   return files;
 }
 
-function collectLinks(source) {
+function collectLinks(source, { chapterRefs = false } = {}) {
   const links = [];
   const lines = source.split(/\r?\n/);
   let inFence = false;
@@ -40,6 +40,13 @@ function collectLinks(source) {
     let match;
     while ((match = linkPattern.exec(withoutInlineCode))) {
       if (!match[0].startsWith("!")) links.push({ href: match[1], line: index + 1 });
+    }
+
+    // Chapter file names written as inline code, e.g. 下一篇:`05-链表.md`
+    if (chapterRefs) {
+      for (const ref of line.matchAll(/`(\d{2}-[^`/]+\.md)`/g)) {
+        links.push({ href: ref[1], line: index + 1 });
+      }
     }
   });
 
@@ -68,7 +75,8 @@ function candidatePaths(fromFile, href) {
 
 for (const file of walk(root)) {
   const source = fs.readFileSync(file, "utf8");
-  for (const { href, line } of collectLinks(source)) {
+  const chapterRefs = path.dirname(file) !== root;
+  for (const { href, line } of collectLinks(source, { chapterRefs })) {
     const candidates = candidatePaths(file, href);
     if (candidates.length && !candidates.some((candidate) => fs.existsSync(candidate))) {
       const relFile = path.relative(root, file);

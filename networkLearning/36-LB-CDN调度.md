@@ -800,4 +800,4 @@ CPU 时间限制:Workers 50ms / 请求(免费版 10ms)
 
 ---
 
-下一篇:`37-WAF与DDoS防御.md`,讲完了"怎么把流量送到对的地方",该讲"怎么把坏流量挡在门外"——**WAF 在 LB 后面做了什么**(SQL 注入 / XSS / 路径遍历的特征匹配 + 行为分析)、**OWASP ModSecurity 规则集**、**DDoS 三大类型**(SYN flood 在传输层 / UDP amp 利用反射 / CC 在应用层伪装真用户)、**防御手段从浅到深**(SYN cookie / 速率限制 / 挑战质询 / Anycast 摊平 / 大流量清洗中心)、**429 / 503 在限流时怎么用、Retry-After 是关键、Cloudflare / 阿里云 / AWS Shield 各自的玩法**——以及为什么"防 DDoS 最好的办法是有钱买 Anycast 带宽",而**钱不够的小厂只能在源站做 CC 防御**。
+下一篇:`37-WAF-DDoS防御.md`,讲完了"怎么把流量送到对的地方",该讲"怎么把坏流量挡在门外"——**WAF 在 LB 后面做了什么**(SQL 注入 / XSS / 路径遍历的特征匹配 + 行为分析)、**OWASP ModSecurity 规则集**、**DDoS 三大类型**(SYN flood 在传输层 / UDP amp 利用反射 / CC 在应用层伪装真用户)、**防御手段从浅到深**(SYN cookie / 速率限制 / 挑战质询 / Anycast 摊平 / 大流量清洗中心)、**429 / 503 在限流时怎么用、Retry-After 是关键、Cloudflare / 阿里云 / AWS Shield 各自的玩法**——以及为什么"防 DDoS 最好的办法是有钱买 Anycast 带宽",而**钱不够的小厂只能在源站做 CC 防御**。

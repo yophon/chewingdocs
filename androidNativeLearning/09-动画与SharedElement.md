@@ -382,4 +382,4 @@ fun NoteFlow() {
 
 ---
 
-下一篇 `10-应用架构 ViewModel UDF 与 UIState.md`,把"状态从哪来、事件去哪、屏幕之间怎么共享"系统讲清楚。Hilt 注入、Navigation 路由、Room 持久化都在这一篇之后才有意义——没有架构,所有功能堆在 Composable 里就是新版屎山。
+下一篇 `10-应用架构ViewModel与UDF.md`,把"状态从哪来、事件去哪、屏幕之间怎么共享"系统讲清楚。Hilt 注入、Navigation 路由、Room 持久化都在这一篇之后才有意义——没有架构,所有功能堆在 Composable 里就是新版屎山。

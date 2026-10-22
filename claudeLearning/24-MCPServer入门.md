@@ -402,4 +402,4 @@ claude mcp add wiki -- python /path/to/wiki_server.py
 
 ---
 
-下一篇:`25-实战内部MCP-server.md`,把这套放大——给公司内部部署平台 / 监控 / 工单系统 写一套真实可用的 MCP server,讲架构 / 鉴权 / 审计 / 灰度发布。
+下一篇:`25-实战内部MCPserver.md`,把这套放大——给公司内部部署平台 / 监控 / 工单系统 写一套真实可用的 MCP server,讲架构 / 鉴权 / 审计 / 灰度发布。

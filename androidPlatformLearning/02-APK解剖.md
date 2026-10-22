@@ -362,4 +362,4 @@ apktool d mystery.apk -o mystery-full
 
 ---
 
-下一篇 `03-进程、Sandbox 与 UID 模型.md`,把"每个 App 一个 UID 沙箱"这件事彻底讲清楚:Zygote 怎么 fork、UID 怎么分配、`/data/data/` 权限、Application 类的生命周期、多进程 App(`android:process` 标签)、`ProcessLifecycleOwner` 与"全局进程级状态"。
+下一篇 `03-进程与Sandbox.md`,把"每个 App 一个 UID 沙箱"这件事彻底讲清楚:Zygote 怎么 fork、UID 怎么分配、`/data/data/` 权限、Application 类的生命周期、多进程 App(`android:process` 标签)、`ProcessLifecycleOwner` 与"全局进程级状态"。

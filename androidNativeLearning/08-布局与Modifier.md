@@ -430,4 +430,4 @@ Box(modifier = Modifier.semantics {
 
 ---
 
-下一篇 `09-动画 SharedElement 与 Lookahead.md`,讲 Compose 的动画系统:`animate*AsState` 一行动画、`Crossfade` / `AnimatedVisibility` 切换动画、Compose 1.7 的 `SharedTransitionLayout`(屏幕间元素 morphing)与 `LookaheadScope`(预测布局)。这一篇之后,你能写出抖音 / Twitter 那种"图片放大到详情页"的过渡。
+下一篇 `09-动画与SharedElement.md`,讲 Compose 的动画系统:`animate*AsState` 一行动画、`Crossfade` / `AnimatedVisibility` 切换动画、Compose 1.7 的 `SharedTransitionLayout`(屏幕间元素 morphing)与 `LookaheadScope`(预测布局)。这一篇之后,你能写出抖音 / Twitter 那种"图片放大到详情页"的过渡。

@@ -401,4 +401,4 @@ adb shell dumpsys activity processes | grep -A 5 "Foreground services"
 
 ---
 
-下一篇 `10-BroadcastReceiver 显式 隐式 API26 之后.md`,讲 Android 的"事件总线":系统广播(`BOOT_COMPLETED` / `BATTERY_LOW` / `CONNECTIVITY_CHANGE`)、自定义广播、动态 / 静态注册的区别、API 26 起为什么大部分静态注册广播被禁用、`LocalBroadcastManager` 为什么也被 deprecated。
+下一篇 `10-BroadcastReceiver.md`,讲 Android 的"事件总线":系统广播(`BOOT_COMPLETED` / `BATTERY_LOW` / `CONNECTIVITY_CHANGE`)、自定义广播、动态 / 静态注册的区别、API 26 起为什么大部分静态注册广播被禁用、`LocalBroadcastManager` 为什么也被 deprecated。

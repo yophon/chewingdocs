@@ -432,4 +432,4 @@ EOF
 
 ---
 
-下一篇 `13-ANR 卡顿与 Java 时代异步演化.md`,讲 Android 主线程"娇贵"的代价——5 秒 ANR 阈值、卡顿来源(主线程阻塞 / Binder 慢 / GC 暂停)、`AsyncTask` / `Loader` / RxJava / 协程的演化史:为什么前三者死了,协程为什么活下来。
+下一篇 `13-ANR与异步演化.md`,讲 Android 主线程"娇贵"的代价——5 秒 ANR 阈值、卡顿来源(主线程阻塞 / Binder 慢 / GC 暂停)、`AsyncTask` / `Loader` / RxJava / 协程的演化史:为什么前三者死了,协程为什么活下来。

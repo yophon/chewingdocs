@@ -467,4 +467,4 @@ dataStore.edit { p -> p[KEY] = if (p[KEY] == "L") "D" else "L" }
 
 ---
 
-下一篇 `14-Retrofit 与第一个端到端闭环.md`,把 Retrofit + OkHttp + kotlinx.serialization 接进来,做"远端拉笔记 → 写本地 Room → UI 自动刷新"的完整闭环。这是 NotedX 第一个 production-ready 的功能。
+下一篇 `14-Retrofit与第一个闭环.md`,把 Retrofit + OkHttp + kotlinx.serialization 接进来,做"远端拉笔记 → 写本地 Room → UI 自动刷新"的完整闭环。这是 NotedX 第一个 production-ready 的功能。

@@ -489,4 +489,4 @@ private fun handleDeepLink(intent: Intent) {
 
 ---
 
-下一篇 `20-多模块化:app / feature / core / data.md`,讲什么时候该拆模块、怎么拆、Hilt 与 Compose 在多模块下的配置。**前 19 篇所有代码都在单模块**——这一篇之后 NotedX 才真正进入"团队工程"模式。
+下一篇 `20-多模块化.md`,讲什么时候该拆模块、怎么拆、Hilt 与 Compose 在多模块下的配置。**前 19 篇所有代码都在单模块**——这一篇之后 NotedX 才真正进入"团队工程"模式。

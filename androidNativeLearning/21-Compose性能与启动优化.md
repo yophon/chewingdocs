@@ -552,4 +552,4 @@ filter / map 应当在 ViewModel 端做完,UI 只展示。
 
 ---
 
-下一篇 `22-测试、打包与发布.md`,讲 NotedX 上架前的最后一步:Compose UI Test、ViewModel 单元测试、R8 混淆、AppBundle、签名密钥管理、Play Console 内测 / 正式发布、Play Integrity 反作弊基础、长期维护检查表。读完整本系列完结。
+下一篇 `22-测试打包与发布.md`,讲 NotedX 上架前的最后一步:Compose UI Test、ViewModel 单元测试、R8 混淆、AppBundle、签名密钥管理、Play Console 内测 / 正式发布、Play Integrity 反作弊基础、长期维护检查表。读完整本系列完结。

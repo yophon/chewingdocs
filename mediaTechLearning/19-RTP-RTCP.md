@@ -106,4 +106,4 @@ bytesSent / bytesReceived
 4. **关键帧请求太频繁**——会造成码率尖峰。
 5. **忽略音频 jitter**——断音比视频糊更难忍。
 
-下一篇:`20-音视频采集、Track 与 MediaStream.md`。
+下一篇:`20-音视频采集-Track与MediaStream.md`。

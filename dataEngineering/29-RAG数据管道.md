@@ -520,7 +520,7 @@ def answer(query, user):
 
 ### 10.1 切片把代码块切碎
 
-```
+````
 Markdown 代码块:
   ```python
   def f():
@@ -533,7 +533,7 @@ Markdown 代码块:
 
 解法:Markdown-aware chunker(LangChain 的 MarkdownTextSplitter)
       代码块不切,作为整体 chunk
-```
+````
 
 ### 10.2 没有 source attribution
 

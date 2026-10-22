@@ -105,4 +105,4 @@ Web Audio 天然适合做:
 4. **自己写回声消除**——优先用 WebRTC 内置 AEC。
 5. **不关闭 AudioContext 和 Track**——资源泄漏。
 
-下一篇:`16-WebRTC 总览.md`。
+下一篇:`16-WebRTC总览.md`。
