@@ -85,7 +85,7 @@ git worktree prune                       # 清理已删除目录的 worktree 记
 | 同时维护多个 release 分支 | 每个 release 一个 worktree |
 | Claude Code 的隔离 worktree | 在 worktree 里让 AI 改,主 worktree 不受影响 |
 
-> Claude Code 的 EnterWorktree / ExitWorktree 工具就是基于这个机制——**主仓库不受 AI 改动影响,worktree 里随便折腾,确认无误后合回主仓库**。详见 claudeLearning/05。
+> Claude Code 的 EnterWorktree / ExitWorktree 工具就是基于这个机制——**主仓库不受 AI 改动影响,worktree 里随便折腾,确认无误后合回主仓库**。详见 claudeLearning/16。
 
 ### 1.6 临时 worktree 看老 commit
 

@@ -35,10 +35,10 @@
 | **block entity** | 每 tick 遍历所有方块实体逐个 tick;漏斗每几 tick 还要扫容器内容(第 09 篇) | 大型物流系统、几百个漏斗 |
 | **区块加载与生成** | 生成是分阶段重计算(第 16 篇),加载要解压+反序列化(第 07/08 篇) | 玩家高速移动、大量区块加载器、刚开荒的新地图 |
 | **随机刻** | randomTickSpeed 被调高,或大片作物/树叶都在 random tick(第 04 篇) | 把 randomTickSpeed 拉到几千"催熟"的服务器 |
-| **光照更新** | 放/挖方块触发光照洪水填充重算,原版光照引擎很拖(第 10 篇) | 大规模建造/爆破、频繁开关光源 |
+| **光照更新** | 放/挖方块触发光照洪水填充重算;1.20 之前的原版光照引擎尤其拖,1.20 重写后好了很多(第 10 篇) | 大规模建造/爆破、频繁开关光源 |
 | **复杂红石** | 邻居更新级联可能引发"更新风暴"(第 14 篇) | 大型红石机器、瞬时门、0-tick 农场 |
 
-经验法则:**实体和 block entity 是 90% 服务器 lag 的来源**。掉落物尤其阴险——一个没装满的物流系统会让物品堆在地上,每个掉落物都是一个要 tick 的实体。
+经验法则:**实体和 block entity 是服务器 lag 最常见的来源**,排查时先看它们。掉落物尤其阴险——一个没装满的物流系统会让物品堆在地上,每个掉落物都是一个要 tick 的实体。
 
 ---
 
@@ -68,7 +68,7 @@
 
 | 工具 | 用途 | 备注 |
 | --- | --- | --- |
-| **/tick** (1.21+) | 原版内置:`/tick rate`、`/tick freeze`、`/tick step`、`/tick sprint` | 直接干预第 04 篇那个时间累加器,调试时冻结世界很好用 |
+| **/tick** (1.20.3+) | 原版内置:`/tick rate`、`/tick freeze`、`/tick step`、`/tick sprint`,还有 `/tick query` 看当前 MSPT | 直接干预第 04 篇那个主循环,调试时冻结世界很好用 |
 | **F3 调试屏** | 客户端:看 FPS、区块、实体计数、内存 | 偏客户端,服务端深度诊断还得靠 spark |
 | **Timings** (旧) | Paper 老一代服务端 profiler | 基本被 spark 取代,新项目别用 |
 
@@ -81,15 +81,15 @@
 | mod | 治哪段 | 对应前文 |
 | --- | --- | --- |
 | **Lithium** | 重写大量游戏逻辑算法(AI、碰撞、刷怪、区块 tick 调度),不改行为只改实现 | 第 04/06/15 篇 |
-| **Starlight** | 把原版那套拖沓的光照引擎整个重写,放挖方块时的光照更新快几个数量级 | 第 10 篇 |
-| **C2ME** | 并行化区块加载/生成,把单线程的生成流水线摊到多核 | 第 05/16 篇 |
+| **C2ME** | 进一步并行化区块的生成、加载和存盘,让世界生成更充分地用上多核 | 第 05/16 篇 |
 | **FerriteCore** | 砍内存占用(BlockState、NBT 等的去重),降 GC 压力 | 第 08/09 篇 |
 | **Sodium** | **客户端**渲染引擎重写,大幅提 FPS(这是 FPS 药,不是 TPS 药) | 第 03/20 篇 |
+| **Starlight**(已停更) | 1.20 之前把原版光照引擎整个重写,光照更新快得多。1.20 原版借鉴它的思路重写了光照引擎,作者认为 1.20 起不再需要它,仓库已归档;后续工作并入 Paper 团队的 Moonrise | 第 10 篇 |
 
 服务端形态的选择也是性能决策:
 
 - **Paper**(及其衍生)在原版基础上做了大量服务端优化和可配置项(实体活动范围、刷怪频率、漏斗节流等),纯生存服几乎默认起步。
-- **Fabric + Lithium/Starlight/C2ME** 这条线更模块化,想保留 mod 生态时常走这边。
+- **Fabric + Lithium/C2ME** 这条线更模块化,想保留 mod 生态时常走这边。
 
 > 取舍提醒:Paper 这类为了性能,会**牺牲一部分原版行为的精确性**(某些机器、某些 tick 行为可能变样)。技术红石玩家反而要躲开这些"优化",因为他们依赖的正是原版那套"低效但确定"的更新顺序(第 14 篇的 quasi-connectivity、更新顺序)。性能和行为保真,在 Minecraft 里是一对要权衡的目标。
 
@@ -109,7 +109,7 @@
 3. 对症下药
    实体多 → 清掉落物 / 限刷怪 / 调 Paper 实体配置
    漏斗多 → 减 block entity / 上 Lithium
-   光照卡 → Starlight
+   光照卡 → 先看版本:1.20 之前可用 Starlight;之后多半是大量频繁改动光源,改设计
    生成卡 → C2ME / 降模拟距离(第 05 篇)
    红石风暴 → 改电路 / 接受它就是贵
 ```
@@ -121,3 +121,18 @@
 ## 串联
 
 这一篇是前面所有"性能热点"伏笔的总账:第 04 篇的 tick 预算、第 05 篇的 ticking 范围、第 06 篇的实体、第 09 篇的 block entity、第 10 篇的光照、第 14 篇的红石,在这里被统一到"MSPT 怎么花"这个视角下。下一步如果想往客户端钻,第 20 篇会把渲染管线(以及 Sodium 治的那段)讲透;想理解为什么生成会成为热点,回看第 16 篇的密度函数与结构生成。
+
+---
+
+## 参考
+
+- [spark docs](https://spark.lucko.me/docs/)(spark)
+- [The Tick Loop](https://spark.lucko.me/docs/guides/The-tick-loop)(spark)
+- [TPS and MSPT](https://spark.lucko.me/docs/guides/TPS-and-MSPT)(spark)
+- [Commands/tick](https://minecraft.wiki/w/Commands/tick)(Minecraft Wiki)
+- [CaffeineMC/lithium](https://github.com/CaffeineMC/lithium)(GitHub)
+- [RelativityMC/C2ME-fabric](https://github.com/RelativityMC/C2ME-fabric)(GitHub)
+- [malte0811/FerriteCore](https://github.com/malte0811/FerriteCore)(GitHub)
+- [CaffeineMC/sodium](https://github.com/CaffeineMC/sodium)(GitHub)
+- [PaperMC/Starlight(已归档)](https://github.com/PaperMC/Starlight)(GitHub)
+- [PaperMC Docs](https://docs.papermc.io/)(PaperMC)

@@ -1,8 +1,8 @@
 # mod 架构:Fabric、Forge 与 Mixin
 
-先说一个很多人没意识到的事实:**Minecraft Java 版从来没有官方 mod API。** Mojang 没开放任何"插件接口",游戏发布出来就是一个混淆过的、自洽的 jar。那几万个 mod 是怎么来的?答案不太体面但很硬核——**社区是在运行时把游戏的代码改写了**。整个 mod 生态,本质是一群人在没有任何官方扩展点的前提下,用字节码工程硬生生造出来的一层。
+先说一个很多人没意识到的事实:**Minecraft Java 版从来没有官方 mod API。** Mojang 没开放任何"插件接口",游戏发布出来就是一个自洽的 jar——而且直到 1.21.11,这个 jar 还是混淆过的。那几万个 mod 是怎么来的?答案不太体面但很硬核——**社区是在运行时把游戏的代码改写了**。整个 mod 生态,本质是一群人在没有任何官方扩展点的前提下,用字节码工程硬生生造出来的一层。
 
-> 一句话先记住:**modloader 是一个在游戏启动前接管类加载的引导层,Mixin 是往别人编译好的方法里插桩的手术刀,mappings 是把混淆代码翻译回人话的字典——三者合起来,才让"改一个闭源游戏"变得可工程化。**
+> 一句话先记住:**modloader 是一个在游戏启动前接管类加载的引导层,Mixin 是往别人编译好的方法里插桩的手术刀,mappings 曾经是把混淆代码翻译回人话的字典——三者合起来,才让"改一个闭源游戏"变得可工程化。26.1 起游戏不再混淆,第三件正在退场。**
 
 ---
 
@@ -49,23 +49,34 @@
 
 ---
 
-## 三、混淆与映射:为什么 mod 死死绑版本
+## 三、混淆与映射:mod 为什么曾经死死绑版本
 
-这是理解 mod 生态脆弱性的关键,也是新手最容易忽略的一层。
+这是理解 mod 生态脆弱性的关键,也是近两年变化最大的一层。
 
-Mojang **发布的是混淆(obfuscated)过的代码**:类名、方法名、字段名被替换成 `a`、`b`、`c`、`aabb` 这种无意义短名。原因是体积和一点点防护。问题是——你要给 `EntityPlayer.attack()` 注入逻辑,但在发布版里它可能叫 `class_1657.method_7324()`,甚至每个版本的混淆名都不一样。
+直到 1.21.11,Mojang **发布的都是混淆(obfuscated)过的代码**:类名、方法名、字段名被替换成 `a`、`b`、`c`、`aabb` 这种无意义短名,而且每个版本的混淆名都不一样。问题是——你想给玩家的攻击逻辑注入代码,可它在这一版的 jar 里叫 `cmx.a()`,下一版可能就叫 `cof.b()` 了。
 
 于是有了 **mappings(映射表)**:一张把混淆名翻译回可读名的字典。
 
 | 映射 | 阵营 | 风格 |
 | --- | --- | --- |
-| **Mojmap**(官方 official mappings) | Mojang 自 1.14.4 起放出 | 官方名,权威但许可受限,近年成主流 |
-| **Yarn** | Fabric 社区 | 社区命名,开放,曾是 Fabric 默认 |
+| **Mojmap**(官方 official mappings) | Mojang 自 1.14.4 起放出 | 官方名,权威;早期许可条款让人犹豫,后来成了主流。NeoForge 从 1.20.2 起运行时直接用它 |
+| **Yarn** | Fabric 社区 | 社区命名,开放,长期是 Fabric 的默认;1.21.11 之后停止更新 |
+| **Intermediary** | Fabric | 不是给人读的,而是一套**跨版本稳定的中间名**,比如玩家类叫 `class_1657`。同一个类、同一个方法,只要原版没删改它,在各版本里的中间名都不变 |
 | **MCP / SRG** | 早期 Forge | 历史映射体系,现已被取代 |
 
-开发时 mod 用可读名写代码;构建时再**重映射(remap)** 回目标版本的混淆名,才能和真实游戏对上。
+开发时 mod 用可读名写代码;构建时再**重映射(remap)** 成发布用的名字,才能和真实游戏对上。这里 Fabric 和早期 Forge 走了两条路:
 
-**这就是 mod 强版本绑定的根源之一:** 混淆名随版本变,映射也随版本变,你针对 1.20.1 编译的 mod,里面写死的是 1.20.1 的混淆引用,拿到 1.21 直接对不上号——哪怕逻辑一行没改。
+- **早期 Forge**:运行时用 MCP/SRG 这套社区维护、按版本更新的名字,它们跨版本也会变动;再加上 Forge 自己的 API 也在变,Forge mod 基本都要逐个版本重新适配、重新编译——哪怕 mod 自己的逻辑一行没改。
+- **Fabric**:mod 重映射到 Intermediary 这层稳定的中间名,运行时再由加载器把中间名映射到当前版本的混淆名。所以只要 mod 用到的原版方法本身没变,它**不必因为混淆名变化而重新编译**。这是 Fabric 跟版快的原因之一。
+
+### 26.1 起:游戏不再混淆
+
+2025 年 10 月,Mojang 宣布 Java 版不再混淆:**1.21.11 是最后一个混淆发布的版本,26.1 起正式版直接带着可读的类名、方法名发布**(连方法参数名都有),也不再需要单独发映射文件。生态随之调整:
+
+- **Fabric**:Intermediary 不再存在,运行时直接用 Mojang 的名字;Yarn 在 1.21.11 之后停更,官方推荐改用 Mojang 名;新的 Loom 构建插件不再做重映射。
+- **NeoForge**:早在 1.20.2 就全面改用 Mojang 名,这次几乎不受影响,只是像 Parchment 这种"补参数名"的社区映射变成了可选项。
+
+对 mod 开发者来说,"映射"这一整层复杂度在新版本里基本消失了。但版本脆弱性**并没有**跟着消失——它的主要来源本来就是下一节要讲的:你注入的那段原版代码,下个版本可能就不长这样了。
 
 ---
 
@@ -110,17 +121,30 @@ Mixin 强大,但它**改的是共享的字节码**。两个 mod 都 `@Redirect` 
 
 | 漂移的东西 | 影响 | 关联 |
 | --- | --- | --- |
-| 混淆名 / 映射 | 方法字段引用全对不上,要重映射重编译 | 本篇第三节 |
+| 混淆名 / 映射(1.21.11 及以前) | 方法字段引用对不上,要重映射重编译;Fabric 的中间名缓解了一大半,26.1 起游戏不再混淆,这一行基本消失 | 本篇第三节 |
 | 目标方法的内部结构 | mixin 注入点(某次调用、某个变量)可能不存在了,织入失败 | 本篇第四节 |
 | 注册表条目增删改名 | mod 注册的方块/物品 ID、与原版交互的 registry 假设可能失效;联机还要过 registry sync | 见"注册表、维度与修饰层"一篇 |
 | 存档结构 | 原版用 DataFixerUpper 迁移,但 mod 自己加的数据没人替你迁,跨版本存档容易坏 | 见"数据组件与 DataFixerUpper"一篇 |
 
-所以"Minecraft mod 升级一个大版本要等几个月"不是作者懒,而是**他依赖的每一层地基都在动**:映射变了、目标代码变了、注册和存档语义也可能变了。Fabric 之所以跟版快,正是因为它内核小、对原版内部结构的假设少;Forge 之所以慢,是因为它那套大 API 本身就深度绑定原版实现,牵一发动全身。
+所以"Minecraft mod 升级一个大版本要等几个月"不是作者懒,而是**他依赖的每一层地基都在动**:目标代码变了、注册和存档语义也可能变了,老版本里还要再加上映射变了。Fabric 之所以跟版快,一是内核小、对原版内部结构的假设少,二是 Intermediary 让它在混淆时代就不怕"改名";Forge 之所以慢,是因为它那套大 API 本身就深度绑定原版实现,牵一发动全身。
 
 ---
 
 ## 收一句
 
-Minecraft 的 mod 生态是个很特别的工程样本:**在一个完全没有官方扩展点、还故意混淆过的闭源游戏上,社区靠"接管类加载 + 字节码注入 + 逆向映射"三件套,硬造出了一个能装上万个扩展的平台。**
+Minecraft 的 mod 生态是个很特别的工程样本:**在一个没有官方扩展点、而且十几年都混淆发布的闭源游戏上,社区靠"接管类加载 + 字节码注入 + 逆向映射"三件套,硬造出了一个能装上万个扩展的平台。** 26.1 起 Mojang 主动拿掉了混淆,等于官方承认了这个生态,并替它拆掉了第三件套。
 
 它的威力来自"几乎能改任何东西",它的脆弱也来自同一件事——你改的不是稳定的 API,而是别人随时会变的私有实现。理解了这点,就理解了为什么 mod 那么强、又那么容易碎:**这层扩展能力从来不是设计出来的,是工程出来的。**
+
+---
+
+## 参考
+
+- [Developer Guides](https://docs.fabricmc.net/develop/)(Fabric Documentation)
+- [Migrating Mappings](https://docs.fabricmc.net/develop/porting/mappings/)(Fabric Documentation)
+- [Removing Obfuscation from Fabric](https://fabricmc.net/2025/10/31/obfuscation.html)(fabricmc.net)
+- [NeoForged Documentation](https://docs.neoforged.net/)(NeoForged)
+- [SpongePowered/Mixin](https://github.com/SpongePowered/Mixin)(GitHub)
+- [Introduction to Mixins: Understanding Mixin Architecture](https://github.com/SpongePowered/Mixin/wiki/Introduction-to-Mixins---Understanding-Mixin-Architecture)(Mixin Wiki)
+- [Removing obfuscation in Java Edition](https://www.minecraft.net/en-us/article/removing-obfuscation-in-java-edition)(minecraft.net)
+- [Obfuscation map](https://minecraft.wiki/w/Obfuscation_map)(Minecraft Wiki)

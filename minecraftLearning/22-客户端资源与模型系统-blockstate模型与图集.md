@@ -159,6 +159,10 @@ BakedModel (一组 quad)
 chunk mesh → 第 20 篇渲染管线 → 屏幕
 ```
 
+### 物品走的是另一张"选择表"
+
+方块靠 blockstate JSON 把"属性组合"映射到模型;物品在 1.21.4 之后也有了自己的对应物——`assets/<ns>/items/<id>.json` 里的**物品模型定义**。物品身上的 `item_model` 组件(第 17 篇)指向它,它再根据物品的当前状态选模型:按条件(`condition`)、按取值(`select`)、按数值区间(`range_dispatch`,比如弓拉了多满、指南针指向哪),或者把几个模型叠起来(`composite`)。思路和方块的 variants/multipart 如出一辙:**服务端只给"状态",客户端用一张数据驱动的表决定"画成什么"**。
+
 ---
 
 ## 六、tint index:颜色不在贴图里
@@ -187,3 +191,14 @@ chunk mesh → 第 20 篇渲染管线 → 屏幕
 | 只存"是什么",不存"长什么样" | 只存"长什么样",不碰"是什么" |
 
 同一种吝啬贯穿两侧:**描述一次,复用千万次;能转、能引、能算的,就绝不复制一份**。服务端靠这招把无限世界塞进内存和硬盘,客户端靠这招把成千上万个方块的外观压成一小撮 JSON 和一张图集。理解了这层对偶,你就明白为什么 Minecraft 的方块系统既能高度可定制(全是数据驱动的 JSON),又跑得动——因为"可定制"和"高性能"在这里用的是同一个设计:**把长相也当成可共享的数据,而不是逐方块的资产**。
+
+---
+
+## 参考
+
+- [Resource pack](https://minecraft.wiki/w/Resource_pack)(Minecraft Wiki)
+- [Blockstates definition](https://minecraft.wiki/w/Blockstates_definition)(Minecraft Wiki)
+- [Tutorial:Models](https://minecraft.wiki/w/Tutorial:Models)(Minecraft Wiki)
+- [Items model definition](https://minecraft.wiki/w/Items_model_definition)(Minecraft Wiki)
+- [Texture atlas](https://minecraft.wiki/w/Texture_atlas)(Minecraft Wiki)
+- [Block colors § Grass colors](https://minecraft.wiki/w/Block_colors#Grass_colors)(Minecraft Wiki)
