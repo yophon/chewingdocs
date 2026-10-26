@@ -73,6 +73,7 @@ features:
 | 安全 | [securityLearning](/securityLearning/01-安全总览) |
 | Claude Code | [claudeLearning](/claudeLearning/01-Claude-Code总览与心智) |
 | DeepSeek Harness | [dshLearning](/dshLearning/01-DeepSeek-Harness总览与心智) |
+| 财税与金融常识 | [financeLearning](/financeLearning/01-财税与金融常识总览) |
 | 杂项 | [杂项](/杂项/文件与音视频分发原理) |
 
 [series-table:end]: #

@@ -29,5 +29,6 @@ export const series = [
   { text: "安全", dir: "securityLearning" },
   { text: "Claude Code", dir: "claudeLearning" },
   { text: "DeepSeek Harness", dir: "dshLearning", planTitle: "DeepSeek Harness 写作计划" },
+  { text: "财税与金融常识", dir: "financeLearning" },
   { text: "杂项", dir: "杂项" }
 ];

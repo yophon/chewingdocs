@@ -119,6 +119,10 @@ function groupedTopicItems(): DefaultTheme.NavItemChildren[] {
         seriesItem("securityLearning"),
         seriesItem("杂项")
       ]
+    },
+    {
+      text: "财经常识",
+      items: [seriesItem("financeLearning")]
     }
   ];
 }
