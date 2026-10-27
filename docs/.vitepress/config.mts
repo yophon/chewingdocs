@@ -123,6 +123,10 @@ function groupedTopicItems(): DefaultTheme.NavItemChildren[] {
     {
       text: "财经常识",
       items: [seriesItem("financeLearning")]
+    },
+    {
+      text: "自然科学",
+      items: [seriesItem("plantLearning")]
     }
   ];
 }

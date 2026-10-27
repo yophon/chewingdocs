@@ -30,5 +30,6 @@ export const series = [
   { text: "Claude Code", dir: "claudeLearning" },
   { text: "DeepSeek Harness", dir: "dshLearning", planTitle: "DeepSeek Harness 写作计划" },
   { text: "财税与金融常识", dir: "financeLearning" },
+  { text: "植物生理与生态", dir: "plantLearning" },
   { text: "杂项", dir: "杂项" }
 ];

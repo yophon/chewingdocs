@@ -2,7 +2,7 @@
 
 按主题整理的工程知识库。目标不是堆 API 手册，而是把工程师常用的知识拆成一组可连续阅读的系列：先建立心智模型，再进入工具、架构、排障、选型和真实工程取舍。
 
-当前内容覆盖 Web、AI、AI Infra、后端、系统设计、分布式、网络、操作系统、DevOps / SRE、数据工程、音视频工程、算法、程序员数学、Git、终端工程、Go、Rust、移动端通用知识、Flutter、Android、iOS、Godot、Minecraft 技术原理、解释器、安全、Claude Code、DeepSeek Harness、财税与金融常识、设计模式、云服务等方向。
+当前内容覆盖 Web、AI、AI Infra、后端、系统设计、分布式、网络、操作系统、DevOps / SRE、数据工程、音视频工程、算法、程序员数学、Git、终端工程、Go、Rust、移动端通用知识、Flutter、Android、iOS、Godot、Minecraft 技术原理、解释器、安全、Claude Code、DeepSeek Harness、财税与金融常识、植物生理与生态、设计模式、云服务等方向。
 
 在线阅读：<https://yophon.github.io/chewingdocs/>
 
@@ -45,6 +45,7 @@
 | Claude Code | 42 | [claudeLearning](claudeLearning/01-Claude-Code总览与心智.md) |
 | DeepSeek Harness | 31 | [dshLearning](dshLearning/01-DeepSeek-Harness总览与心智.md) |
 | 财税与金融常识 | 25 | [financeLearning](financeLearning/01-财税与金融常识总览.md) |
+| 植物生理与生态 | 27 | [plantLearning](plantLearning/01-植物生理与生态总览.md) |
 | 杂项 | 6 | [杂项](杂项/文件与音视频分发原理.md) |
 
 [series-table:end]: #
